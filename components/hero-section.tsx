@@ -134,12 +134,12 @@ export function HeroSection() {
           style={{ animationDelay: '0.85s' }}
         >
           {[
-            { value: '500+', label: 'Clientes Satisfeitas' },
-            { value: '100%', label: 'Produção Artesanal' },
-            { value: '3', label: 'Linhas Exclusivas' },
+            { label: 'Produção Artesanal' },
+            { label: 'Essencias Naturais' },
+            { label: 'Produção Ecológico' },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="font-heading text-3xl font-light text-[#C87A2C] mb-1">{stat.value}</div>
+              
               <div className="text-xs tracking-widest uppercase text-muted-foreground">{stat.label}</div>
             </div>
           ))}

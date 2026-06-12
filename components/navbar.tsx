@@ -45,7 +45,7 @@ export function Navbar() {
         >
           <div className="relative w-10 h-10 rounded-full overflow-hidden border border-[#C87A2C]/40 group-hover:border-[#C87A2C] transition-colors duration-300">
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-Mk6htbXNcCgkPqaQKPAUqTCi1zab9x.png"
+              src="logo.png"
               alt="Chama Ocre Ateliê"
               fill
               className="object-cover"

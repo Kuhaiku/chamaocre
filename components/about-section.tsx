@@ -46,7 +46,6 @@ export function AboutSection() {
 
             {/* Floating badge */}
             <div className="absolute -bottom-6 -right-6 md:-right-8 bg-card border border-[#C87A2C]/40 rounded-sm p-5 shadow-xl shadow-black/40 max-w-[180px]">
-              <div className="font-heading text-3xl font-light text-[#C87A2C] mb-1">100%</div>
               <div className="text-xs text-muted-foreground leading-relaxed tracking-wide uppercase">
                 Feito à mão com amor e dedicação
               </div>
@@ -55,7 +54,7 @@ export function AboutSection() {
             {/* Logo watermark */}
             <div className="absolute top-6 left-6 w-16 h-16 rounded-full overflow-hidden border-2 border-[#C87A2C]/60 bg-background/80 backdrop-blur-sm">
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-Mk6htbXNcCgkPqaQKPAUqTCi1zab9x.png"
+                src="logo.png"
                 alt="Chama Ocre Ateliê"
                 fill
                 className="object-cover"
@@ -90,24 +89,24 @@ export function AboutSection() {
 
             {/* Decorative divider */}
             <div className="reveal-about opacity-0 flex items-center gap-4">
-              <div className="w-12 h-px bg-[#C87A2C]/60" />
+              <div className="w-120 h-px bg-[#C87A2C]/60" />
               <span className="text-[#C87A2C] text-lg">✦</span>
-              <div className="w-12 h-px bg-[#C87A2C]/60" />
+              <div className="w-120 h-px bg-[#C87A2C]/60" />
             </div>
 
             {/* Values */}
             <div className="grid grid-cols-2 gap-4 reveal-about opacity-0">
               {[
-                { icon: '🍂', label: 'Inspiração Outonal' },
-                { icon: '🕯', label: 'Feita à Mão' },
-                { icon: '🌿', label: 'Ingredientes Puros' },
-                { icon: '💛', label: 'Com Muito Amor' },
+                {label: 'Inspiração Outonal' },
+                {label: 'Feita à Mão' },
+                {label: 'Ingredientes Puros' },
+                {label: 'Com Muito Amor' },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center gap-3 text-sm text-muted-foreground"
+                  className="flex items-center gap-3 text-sm text-muted-foreground "
                 >
-                  <span className="text-base">{item.icon}</span>
+                  
                   <span className="tracking-wide">{item.label}</span>
                 </div>
               ))}
@@ -118,7 +117,7 @@ export function AboutSection() {
               className="reveal-about opacity-0 inline-flex items-center gap-3 text-sm tracking-widest uppercase text-[#C87A2C] hover:text-[#E59400] transition-colors duration-300 border-b border-[#C87A2C]/40 hover:border-[#E59400] pb-1"
             >
               Ver Coleção Completa
-              <span>→</span>
+              
             </button>
           </div>
         </div>
