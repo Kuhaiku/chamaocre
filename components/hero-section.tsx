@@ -97,7 +97,7 @@ export function HeroSection() {
           style={{ animationDelay: '0.25s' }}
         >
           Transforme sua casa em um{' '}
-          <em className="text-glow not-italic text-[#E59400]">refúgio de aconchego.</em>
+          <em className="text-glow not-italic text-[#E59400]">refúgio.</em>
         </h1>
 
         {/* Subtitle */}
