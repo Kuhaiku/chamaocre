@@ -71,7 +71,7 @@ export function AboutSection() {
             </div>
 
             <h2 className="font-heading text-5xl md:text-6xl font-light leading-tight text-balance reveal-about opacity-0">
-              O Ritual do{' '}
+              O Momento do{' '}
               <em className="italic text-[#E59400]">Aconchego</em>
             </h2>
 

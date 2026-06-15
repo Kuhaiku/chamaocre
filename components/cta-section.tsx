@@ -58,7 +58,7 @@ export function CtaSection() {
         </h2>
 
         <p className="reveal-cta opacity-0 text-muted-foreground text-lg leading-relaxed max-w-xl mx-auto mb-12">
-          Descubra a coleção exclusiva da Chama Ocre Ateliê e transforme sua rotina em um ritual de bem-estar.
+          Descubra a coleção exclusiva da Chama Ocre Ateliê e transforme sua rotina em um Momento de bem-estar.
         </p>
 
         <div className="reveal-cta opacity-0 flex flex-col sm:flex-row items-center justify-center gap-4">
