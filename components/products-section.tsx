@@ -2,55 +2,54 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ShoppingBag, Star } from 'lucide-react'
+import { ShoppingBag, Star, Loader2 } from 'lucide-react'
 
-const products = [
-  {
-    id: 1,
-    name: 'Vela Toca',
-    line: 'Linha Aconchego',
-    notes: 'Maçã Assada, Canela e Baunilha',
-    feeling: 'Calor, proteção e conforto',
-    price: 'R$ 89,90',
-    image: '/images/vela-toca.png',
-    tag: 'Mais Vendida',
-    tagColor: 'bg-[#C87A2C]',
-    burnTime: '40h',
-    weight: '200g',
-  },
-  {
-    id: 2,
-    name: 'Vela Bosque',
-    line: 'Linha Natureza',
-    notes: 'Cedro, Folhas Secas e Musgo de Carvalho',
-    feeling: 'Floresta, tranquilidade e conexão natural',
-    price: 'R$ 94,90',
-    image: '/images/vela-bosque.png',
-    tag: 'Favorita',
-    tagColor: 'bg-[#8B4522]',
-    burnTime: '45h',
-    weight: '220g',
-  },
-  {
-    id: 3,
-    name: 'Vela Crepúsculo',
-    line: 'Edição Assinatura',
-    notes: 'Âmbar, Figo e Madeira Rústica',
-    feeling: 'Sofisticação, mistério e exclusividade',
-    price: 'R$ 129,90',
-    image: '/images/vela-crepusculo.png',
-    tag: 'Exclusiva',
-    tagColor: 'bg-[#E59400]/80',
-    burnTime: '55h',
-    weight: '280g',
-  },
-]
+// Definindo a interface para o TypeScript ajudar no autocompletar
+interface Product {
+  id: number;
+  name: string;
+  line: string;
+  notes: string;
+  feeling: string;
+  price: string;
+  image: string;
+  tag: string;
+  tagColor: string;
+  burnTime: string;
+  weight: string;
+}
 
 export function ProductsSection() {
   const ref = useRef<HTMLElement>(null)
   const [hovered, setHovered] = useState<number | null>(null)
+  
+  // Novos estados para controlar a listagem vinda do banco
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
+  // Busca os produtos na API quando o componente é montado
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/produtos');
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data.produtos);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar os produtos do catálogo:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Observador de intersecção para animações (agora depende do carregamento)
+  useEffect(() => {
+    if (isLoading || products.length === 0) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -68,7 +67,7 @@ export function ProductsSection() {
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
-  }, [])
+  }, [isLoading, products]);
 
   return (
     <section id="produtos" ref={ref} className="py-28 md:py-36 relative">
@@ -89,90 +88,103 @@ export function ProductsSection() {
           </p>
         </div>
 
-        {/* Product cards */}
-        <div className="grid md:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="reveal-prod opacity-0 group relative rounded-sm overflow-hidden border-ocre-glow bg-card hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C87A2C]/15"
-              onMouseEnter={() => setHovered(product.id)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              {/* Tag */}
-              <div className={`absolute top-4 left-4 z-10 ${product.tagColor} text-foreground text-xs tracking-widest uppercase px-3 py-1 rounded-sm`}>
-                {product.tag}
+        {/* Loading ou Product cards */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-[#C87A2C]">
+            <Loader2 className="w-10 h-10 animate-spin mb-4" />
+            <p className="text-sm font-medium tracking-widest uppercase">Carregando catálogo...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <p>Nenhum produto cadastrado no momento.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-8">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="reveal-prod opacity-0 group relative rounded-sm overflow-hidden border-ocre-glow bg-card hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C87A2C]/15"
+                onMouseEnter={() => setHovered(product.id)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                {/* Tag Condicional */}
+                {product.tag && (
+                  <div className={`absolute top-4 left-4 z-10 ${product.tagColor || 'bg-stone-500'} text-white text-xs tracking-widest uppercase px-3 py-1 rounded-sm`}>
+                    {product.tag}
+                  </div>
+                )}
+
+                {/* Image */}
+                <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className={`object-cover transition-all duration-700 ${hovered === product.id ? 'scale-105' : 'scale-100'}`}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                </div>
+
+                {/* Content */}
+                <div className="p-7">
+                  {/* Line badge */}
+                  <span className="text-xs tracking-[0.2em] uppercase text-[#C87A2C] font-medium">
+                    {product.line}
+                  </span>
+
+                  <h3 className="font-heading text-3xl font-light text-foreground mt-2 mb-4 group-hover:text-[#E59400] transition-colors duration-300">
+                    {product.name}
+                  </h3>
+
+                  {/* Stars */}
+                  <div className="flex items-center gap-1 mb-5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={12} className="fill-[#E59400] text-[#E59400]" />
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-1">(4.9)</span>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-border mb-5" />
+
+                  {/* Notes */}
+                  <div className="space-y-2 mb-6">
+                    <div className="flex gap-2 text-sm">
+                      <span className="text-[#C87A2C] font-medium min-w-fit">Notas:</span>
+                      <span className="text-muted-foreground">{product.notes}</span>
+                    </div>
+                    <div className="flex gap-2 text-sm">
+                      <span className="text-[#C87A2C] font-medium min-w-fit">Sensação:</span>
+                      <span className="text-muted-foreground">{product.feeling}</span>
+                    </div>
+                  </div>
+
+                  {/* Meta info */}
+                  <div className="flex gap-4 mb-6">
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Duração</div>
+                      <div className="text-sm text-foreground font-medium">{product.burnTime}</div>
+                    </div>
+                    <div className="w-px bg-border" />
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Peso</div>
+                      <div className="text-sm text-foreground font-medium">{product.weight}</div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading text-2xl font-light text-foreground">{product.price}</span>
+                    <button className="flex items-center gap-2 bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs tracking-widest uppercase px-5 py-2.5 rounded-sm transition-all duration-300 font-medium">
+                      <ShoppingBag size={13} />
+                      Ver Detalhes
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              {/* Image */}
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className={`object-cover transition-all duration-700 ${hovered === product.id ? 'scale-105' : 'scale-100'}`}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-              </div>
-
-              {/* Content */}
-              <div className="p-7">
-                {/* Line badge */}
-                <span className="text-xs tracking-[0.2em] uppercase text-[#C87A2C] font-medium">
-                  {product.line}
-                </span>
-
-                <h3 className="font-heading text-3xl font-light text-foreground mt-2 mb-4 group-hover:text-[#E59400] transition-colors duration-300">
-                  {product.name}
-                </h3>
-
-                {/* Stars */}
-                <div className="flex items-center gap-1 mb-5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={12} className="fill-[#E59400] text-[#E59400]" />
-                  ))}
-                  <span className="text-xs text-muted-foreground ml-1">(4.9)</span>
-                </div>
-
-                {/* Divider */}
-                <div className="h-px bg-border mb-5" />
-
-                {/* Notes */}
-                <div className="space-y-2 mb-6">
-                  <div className="flex gap-2 text-sm">
-                    <span className="text-[#C87A2C] font-medium min-w-fit">Notas:</span>
-                    <span className="text-muted-foreground">{product.notes}</span>
-                  </div>
-                  <div className="flex gap-2 text-sm">
-                    <span className="text-[#C87A2C] font-medium min-w-fit">Sensação:</span>
-                    <span className="text-muted-foreground">{product.feeling}</span>
-                  </div>
-                </div>
-
-                {/* Meta info */}
-                <div className="flex gap-4 mb-6">
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Duração</div>
-                    <div className="text-sm text-foreground font-medium">{product.burnTime}</div>
-                  </div>
-                  <div className="w-px bg-border" />
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Peso</div>
-                    <div className="text-sm text-foreground font-medium">{product.weight}</div>
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between">
-                  <span className="font-heading text-2xl font-light text-foreground">{product.price}</span>
-                  <button className="flex items-center gap-2 bg-[#C87A2C] hover:bg-[#E59400] text-foreground text-xs tracking-widest uppercase px-5 py-2.5 rounded-sm transition-all duration-300 font-medium">
-                    <ShoppingBag size={13} />
-                    Ver Detalhes
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* CTA */}
         <div className="text-center mt-16 reveal-prod opacity-0">

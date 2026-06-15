@@ -36,7 +36,7 @@ export function AboutSection() {
           <div className="relative reveal-about opacity-0">
             <div className="relative aspect-[4/5] rounded-sm overflow-hidden candle-glow">
               <Image
-                src="/images/"
+                src="images/1781552817963-998278247-gallery-5.png"
                 alt="Processo artesanal de criação das velas Chama Ocre"
                 fill
                 className="object-cover"

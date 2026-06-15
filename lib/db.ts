@@ -1,10 +1,10 @@
 import mysql from 'mysql2/promise';
 
 const pool = mysql.createPool({
-  host: '136.248.87.149', // Mude para o IP do servidor/container em produção
-  port: '3051', 
-  user: 'root',      // Seu usuário do MySQL
-  password: 'sua_senha_aqui', // Sua senha
+  host: '136.248.87.149',
+  port: 3051, // Convertido para number, que é o formato exigido pelo mysql2
+  user: 'root',
+  password: 'Raposo88125442@@',
   database: 'chama_ocre',
   waitForConnections: true,
   connectionLimit: 10,
