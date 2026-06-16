@@ -107,24 +107,24 @@ export function SensorySection() {
              <div className="w-8 h-px bg-[#C87A2C]/50" />
            </div>
 
-           <h2 className="reveal-sens opacity-0 font-heading text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 leading-tight">
+          {/* <h2 className="reveal-sens opacity-0 font-heading text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 leading-tight">
             Acenda o <em className="italic text-[#E59400]">conforto.</em>
-          </h2>
+          </h2> */}
 
-          <p className="reveal-sens opacity-0 text-stone-400 text-sm md:text-base max-w-lg leading-relaxed mb-10">
+          {/* <p className="reveal-sens opacity-0 text-stone-400 text-sm md:text-base max-w-lg leading-relaxed mb-10">
             Descubra a coleção exclusiva da Chama Ocre Ateliê e transforme sua rotina em um momento de bem-estar.
-          </p>
+          </p> */}
 
-          <div className="reveal-sens opacity-0 flex flex-col sm:flex-row gap-4">
-            <Link 
+          {/* <div className="reveal-sens opacity-0 flex flex-col sm:flex-row gap-4">
+             <Link 
               href="#produtos" 
               className="bg-[#C87A2C] hover:bg-[#E59400] text-white flex items-center justify-center gap-2 px-8 py-3.5 rounded-sm tracking-widest uppercase text-[11px] font-medium transition-all"
             >
               <ShoppingBag size={14} />
               Comprar Agora
-            </Link>
+            </Link> 
             
-            <a 
+             <a 
               href="https://wa.me/5522992082292"
               target="_blank"
               rel="noopener noreferrer"
@@ -133,7 +133,7 @@ export function SensorySection() {
               <MessageCircle size={14} />
               Falar no WhatsApp
             </a>
-          </div>
+          </div> */}
         </div>
 
       </div>
