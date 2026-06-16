@@ -90,10 +90,43 @@ export default function AdminDashboard() {
     setGaleria(novaGaleria);
   };
 
-  const handleEditClick = (produto: any) => {
+ const handleEditClick = async (produto: any) => {
     setProdutoEditando(produto);
     setGaleria([]); 
     setActiveTab("form-produto");
+
+    try {
+      const res = await fetch(`/api/produtos/${produto.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const prodCompleto = data.produto;
+        setProdutoEditando(prodCompleto);
+        
+        const imagensCarregadas = [];
+        
+        // 1. Carrega a Capa
+        if (prodCompleto.image) {
+          imagensCarregadas.push({
+            id: 'capa-' + Math.random().toString(36).substr(2, 9),
+            url: prodCompleto.image
+          });
+        }
+        
+        // 2. Carrega a Galeria
+        if (prodCompleto.galeria && prodCompleto.galeria.length > 0) {
+          prodCompleto.galeria.forEach((url: string) => {
+            imagensCarregadas.push({
+              id: 'gal-' + Math.random().toString(36).substr(2, 9),
+              url: url
+            });
+          });
+        }
+        
+        setGaleria(imagensCarregadas);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar imagens do produto:", error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

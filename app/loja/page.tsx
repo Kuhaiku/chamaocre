@@ -8,14 +8,13 @@ import { Footer } from '@/components/footer'
 import { Search, SlidersHorizontal, Loader2, X, ShoppingBag, FilterX } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
 
-// Componente individual do Produto isolado para gerenciar o estado da quantidade
+// Componente individual do Produto isolado para gerenciar a quantidade
 function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: number) => void }) {
   const [quantidade, setQuantidade] = useState(1);
 
   return (
     <div className="group bg-white border border-stone-200 rounded-sm overflow-hidden flex flex-col hover:border-[#C87A2C]/50 transition-colors">
       
-      {/* Apenas a Imagem (Sem Link) */}
       <div className="relative aspect-square overflow-hidden bg-stone-100 block">
         {product.tag && (
           <div className={`absolute top-3 left-3 z-10 ${product.tagColor || 'bg-stone-500'} text-white text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-sm`}>
@@ -42,11 +41,9 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
             R$ {Number(product.price).toFixed(2).replace('.', ',')}
           </span>
           
-          {/* Ações: Contador, Comprar e Detalhes */}
           <div className="flex flex-col gap-3">
             
             <div className="flex items-center gap-2">
-              {/* Controle de Quantidade */}
               <div className="flex items-center border border-stone-200 rounded-sm h-11 bg-stone-50">
                 <button 
                   onClick={() => setQuantidade(Math.max(1, quantidade - 1))} 
@@ -63,7 +60,6 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
                 </button>
               </div>
               
-              {/* Botão de Adicionar (Maior Destaque) */}
               <button 
                 onClick={() => onAdd(product, quantidade)}
                 className="flex-1 h-11 bg-[#C87A2C] hover:bg-[#E59400] text-white flex items-center justify-center gap-2 rounded-sm text-xs font-semibold uppercase tracking-widest transition-colors shadow-sm hover:shadow-md outline-none"
@@ -72,7 +68,6 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
               </button>
             </div>
 
-            {/* Botão de Ver Detalhes */}
             <Link 
               href={`/produto/${product.id}`} 
               className="w-full h-10 border border-stone-200 text-stone-600 hover:border-[#C87A2C] hover:text-[#C87A2C] flex items-center justify-center rounded-sm text-[11px] font-bold uppercase tracking-widest transition-colors outline-none"
@@ -162,7 +157,7 @@ export default function LojaPage() {
       price: Number(produto.price),
       image: produto.image,
       weight: produto.weight,
-      quantity: quantidadeDesejada // Envia a quantidade exata para a sacola
+      quantity: quantidadeDesejada
     })
   }
 
@@ -189,7 +184,7 @@ export default function LojaPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 font-sans">
-      <Navbar />
+      <Navbar forceSolid />
 
       <main className="flex-grow pt-28 pb-20 max-w-7xl mx-auto w-full px-4 sm:px-6">
         
@@ -247,7 +242,7 @@ export default function LojaPage() {
                     placeholder="Nome da vela..." 
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-sm text-sm outline-none focus:border-[#C87A2C]"
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-sm text-sm text-stone-900 outline-none focus:border-[#C87A2C]"
                   />
                 </div>
               </div>
