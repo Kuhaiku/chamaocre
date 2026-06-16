@@ -15,7 +15,8 @@ interface CartState {
   isOpen: boolean;
   
   setIsOpen: (isOpen: boolean) => void;
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  // Agora aceitamos a quantidade como parâmetro opcional
+  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
@@ -33,19 +34,21 @@ export const useCartStore = create<CartState>()(
       setIsOpen: (isOpen) => set({ isOpen }),
       
       addItem: (newItem) => set((state) => {
+        // Pega a quantidade informada ou usa 1 por padrão
+        const qtd = newItem.quantity || 1; 
         const existingItem = state.items.find((item) => item.id === newItem.id);
         
         if (existingItem) {
           return {
             items: state.items.map((item) =>
-              item.id === newItem.id ? { ...item, quantity: item.quantity + 1 } : item
+              item.id === newItem.id ? { ...item, quantity: item.quantity + qtd } : item
             ),
             isOpen: true,
           };
         }
         
         return { 
-          items: [...state.items, { ...newItem, quantity: 1 }], 
+          items: [...state.items, { ...newItem, quantity: qtd }], 
           isOpen: true 
         };
       }),
@@ -69,7 +72,6 @@ export const useCartStore = create<CartState>()(
 
       getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
       
-      // TRAVA DE SEGURANÇA: Number(item.price || 0) garante que o cálculo nunca falhe
       getSubtotal: () => get().items.reduce((total, item) => total + (Number(item.price || 0) * item.quantity), 0),
     }),
     {
