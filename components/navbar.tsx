@@ -69,7 +69,7 @@ export function Navbar() {
         </nav>
 
         {/* CTA */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* <div className="hidden md:flex items-center gap-4">
           <button
             onClick={() => scrollTo('#produtos')}
             className="flex items-center gap-2 bg-[#C87A2C] hover:bg-[#E59400] text-foreground text-sm tracking-widest uppercase px-5 py-2.5 rounded-sm transition-all duration-300 font-medium"
@@ -77,7 +77,7 @@ export function Navbar() {
             <ShoppingBag size={15} />
             Comprar
           </button>
-        </div>
+        </div> */}
 
         {/* Mobile toggle */}
         <button
@@ -101,12 +101,12 @@ export function Navbar() {
               {link.label}
             </button>
           ))}
-          <button
+          {/* <button
             onClick={() => scrollTo('#produtos')}
             className="mt-2 bg-[#C87A2C] hover:bg-[#E59400] text-foreground text-sm tracking-widest uppercase px-5 py-3 rounded-sm transition-all duration-300 font-medium text-center"
           >
             Comprar Agora
-          </button>
+          </button> */}
         </div>
       )}
     </header>

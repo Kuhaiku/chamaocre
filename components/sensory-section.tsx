@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
+import { Eye, Sparkles, Hand, ShoppingBag, MessageCircle } from 'lucide-react'
 
 export function SensorySection() {
   const ref = useRef<HTMLElement>(null)
@@ -14,70 +16,127 @@ export function SensorySection() {
             entry.target.querySelectorAll('.reveal-sens').forEach((el, i) => {
               setTimeout(() => {
                 el.classList.add('animate-fade-in-up')
-                ;(el as HTMLElement).style.opacity = '1'
-              }, i * 200)
+                ;(el as HTMLElement).style.opacity = '0.1'
+              }, i * 150)
             })
           }
         })
       },
-      { threshold: 0.2 }
+      { threshold: 0.1 }
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
 
   return (
-    <section ref={ref} className="relative py-36 overflow-hidden">
-      {/* Background */}
+    <section ref={ref} className="relative w-full bg-[#0a0a0a] overflow-hidden font-sans">
+      
+      {/* Fundo unificado cobrindo toda a seção */}
       <div className="absolute inset-0 z-0">
-        <Image
-          src="/images/gallery-1.png"
-          alt="Chama de vela artesanal"
-          fill
-          className="object-cover object-center"
+        <Image 
+          src="/images/gallery-1.png" 
+          alt="Ambiente Chama Ocre" 
+          fill 
+          className="object-cover opacity-30"
         />
-        <div className="absolute inset-0 bg-background/85" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(200,122,44,0.15)_0%,transparent_65%)]" />
+        {/* Gradiente vindo de baixo para cima: funde 100% com o fundo na base e escurece o topo */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-[#0a0a0a]/90" />
       </div>
 
-      {/* Animated glow orb */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full bg-[#C87A2C]/10 animate-glow-pulse pointer-events-none z-0" />
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-24 md:py-32 flex flex-col items-center text-center">
+        
+        {/* =========================================
+            PARTE 1: SENSORIAL
+        ============================================= */}
+        <div className="relative w-full flex flex-col items-center mb-32">
+          
+          {/* Efeito de Brilho Central (Glow Orb) */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-[#C87A2C]/20 blur-[80px] rounded-full pointer-events-none" />
+          
+          <span className="reveal-sens opacity-0 text-[10px] tracking-[0.3em] uppercase text-[#C87A2C] font-semibold mb-6">
+            A Experiência Chama Ocre
+          </span>
+          
+          <h2 className="reveal-sens opacity-0 font-heading text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 leading-tight">
+            Mais que uma vela.<br/>
+            <em className="italic text-[#E59400]">Uma experiência.</em>
+          </h2>
+          
+          <p className="reveal-sens opacity-0 text-stone-400 text-sm md:text-base max-w-xl leading-relaxed mb-16">
+            Cada fragrância foi criada para transformar ambientes e criar momentos de pausa em meio à correria do dia. Porque você merece desacelerar.
+          </p>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-        <span className="reveal-sens opacity-0 block text-xs tracking-[0.3em] uppercase text-[#C87A2C] font-medium mb-8">
-          A Experiência Chama Ocre
-        </span>
-
-        <h2 className="reveal-sens opacity-0 font-heading text-5xl md:text-7xl font-light leading-tight text-balance mb-8">
-          Mais que uma vela.{' '}
-          <em className="italic text-glow text-[#E59400]">Uma experiência.</em>
-        </h2>
-
-        <p className="reveal-sens opacity-0 text-muted-foreground text-lg md:text-xl leading-relaxed max-w-2xl mx-auto mb-16">
-          Cada fragrância foi criada para transformar ambientes e criar momentos de pausa em meio à correria do dia.
-          Porque você merece desacelerar.
-        </p>
-
-        {/* Sensory pillars */}
-        <div className="reveal-sens opacity-0 grid grid-cols-3 gap-8 md:gap-16">
-          {[
-            { label: 'Visão', value: 'Chama hipnótica', icon: '👁' },
-            { label: 'Olfato', value: 'Aromas envolventes', icon: '✦' },
-            { label: 'Tato', value: 'Texturas artesanais', icon: '✋' },
-          ].map((sense) => (
-            <div key={sense.label} className="text-center group">
-              <div className="w-14 h-14 rounded-full border border-[#C87A2C]/40 bg-[#C87A2C]/10 flex items-center justify-center mx-auto mb-4 group-hover:border-[#C87A2C] group-hover:bg-[#C87A2C]/20 transition-all duration-300 text-lg">
-                {sense.icon}
+          <div className="reveal-sens opacity-0 flex flex-wrap justify-center gap-12 md:gap-24">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#C87A2C]/40 flex items-center justify-center mb-4 bg-black/40">
+                <Eye className="w-5 h-5 text-stone-300" strokeWidth={1.5} />
               </div>
-              <div className="text-xs tracking-[0.2em] uppercase text-[#C87A2C] mb-1">{sense.label}</div>
-              <div className="text-sm text-muted-foreground">{sense.value}</div>
+              <span className="text-xs uppercase tracking-widest text-stone-300 mb-1">Visão</span>
+              <span className="text-[10px] text-stone-500">Chama hipnótica</span>
             </div>
-          ))}
+            
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#C87A2C]/40 flex items-center justify-center mb-4 bg-black/40">
+                <Sparkles className="w-5 h-5 text-stone-300" strokeWidth={1.5} />
+              </div>
+              <span className="text-xs uppercase tracking-widest text-stone-300 mb-1">Olfato</span>
+              <span className="text-[10px] text-stone-500">Aromas envolventes</span>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full border border-[#C87A2C]/40 flex items-center justify-center mb-4 bg-black/40">
+                <Hand className="w-5 h-5 text-stone-300" strokeWidth={1.5} />
+              </div>
+              <span className="text-xs uppercase tracking-widest text-stone-300 mb-1">Tato</span>
+              <span className="text-[10px] text-stone-500">Texturas artesanais</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Bottom border */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C87A2C]/30 to-transparent" />
+        {/* =========================================
+            PARTE 2: CTA (Acenda o conforto)
+        ============================================= */}
+        <div className="relative w-full flex flex-col items-center">
+           
+           {/* Efeito de Brilho Central (Glow Orb) */}
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-[#C87A2C]/15 blur-[80px] rounded-full pointer-events-none" />
+
+           <div className="reveal-sens opacity-0 flex items-center gap-4 mb-6">
+             <div className="w-8 h-px bg-[#C87A2C]/50" />
+             <Sparkles className="w-3 h-3 text-[#C87A2C]" />
+             <div className="w-8 h-px bg-[#C87A2C]/50" />
+           </div>
+
+           <h2 className="reveal-sens opacity-0 font-heading text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 leading-tight">
+            Acenda o <em className="italic text-[#E59400]">conforto.</em>
+          </h2>
+
+          <p className="reveal-sens opacity-0 text-stone-400 text-sm md:text-base max-w-lg leading-relaxed mb-10">
+            Descubra a coleção exclusiva da Chama Ocre Ateliê e transforme sua rotina em um momento de bem-estar.
+          </p>
+
+          <div className="reveal-sens opacity-0 flex flex-col sm:flex-row gap-4">
+            <Link 
+              href="#produtos" 
+              className="bg-[#C87A2C] hover:bg-[#E59400] text-white flex items-center justify-center gap-2 px-8 py-3.5 rounded-sm tracking-widest uppercase text-[11px] font-medium transition-all"
+            >
+              <ShoppingBag size={14} />
+              Comprar Agora
+            </Link>
+            
+            <a 
+              href="https://wa.me/5522992082292"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-[#C87A2C] text-white hover:bg-[#C87A2C]/10 flex items-center justify-center gap-2 px-8 py-3.5 rounded-sm tracking-widest uppercase text-[11px] font-medium transition-all"
+            >
+              <MessageCircle size={14} />
+              Falar no WhatsApp
+            </a>
+          </div>
+        </div>
+
+      </div>
     </section>
   )
 }

@@ -120,12 +120,12 @@ export function HeroSection() {
             Conhecer Coleção
             <ArrowDown size={14} className="group-hover:translate-y-1 transition-transform duration-300" />
           </button>
-          <button
+          {/* <button
             onClick={() => document.querySelector('#produtos')?.scrollIntoView({ behavior: 'smooth' })}
             className="border border-[#C87A2C]/60 hover:border-[#C87A2C] text-foreground hover:text-[#C87A2C] tracking-widest uppercase text-sm font-medium px-10 py-4 rounded-sm transition-all duration-300 backdrop-blur-sm"
           >
             Comprar Agora
-          </button>
+          </button> */}
         </div>
 
         {/* Stats */}

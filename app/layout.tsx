@@ -3,6 +3,9 @@ import type { Metadata } from 'next'
 import { Cormorant_Garamond, Inter } from 'next/font/google'
 import './globals.css'
 
+// Importação do componente da sacola de compras
+import { CartDrawer } from '@/components/cart-drawer'
+
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
@@ -38,6 +41,10 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${inter.variable} ${cormorant.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
+        
+        {/* Adição do Drawer da Sacola globalmente */}
+        <CartDrawer />
+        
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
