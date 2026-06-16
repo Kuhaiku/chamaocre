@@ -7,7 +7,6 @@ const navLinks = [
   { label: 'Início', href: '#hero' },
   { label: 'Sobre', href: '#sobre' },
   { label: 'Produtos', href: '#produtos' },
-  { label: 'Galeria', href: '#galeria' },
 ]
 
 export function Footer() {
@@ -50,7 +49,7 @@ export function Footer() {
             <div className="flex items-center gap-3 mt-8">
               {/* Instagram */}
               <a
-                href="https://instagram.com/chamaocre"
+                href="https://www.instagram.com/chama_ocre/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
@@ -63,22 +62,9 @@ export function Footer() {
                 </svg>
               </a>
 
-              {/* Facebook */}
-              <a
-                href="https://facebook.com/chamaocre"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="w-10 h-10 rounded-sm border border-[#C87A2C]/30 bg-[#C87A2C]/5 flex items-center justify-center text-muted-foreground hover:text-[#C87A2C] hover:border-[#C87A2C]/70 hover:bg-[#C87A2C]/10 transition-all duration-300"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                </svg>
-              </a>
-
               {/* WhatsApp */}
               <a
-                href="https://wa.me/5511999999999"
+                href="https://wa.me/5522992082292"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp"
@@ -114,15 +100,15 @@ export function Footer() {
             </h4>
             <div className="space-y-3 text-sm text-muted-foreground">
               <a
-                href="https://wa.me/5511999999999"
+                href="https://wa.me/5522992082292"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-[#C87A2C] transition-colors duration-300"
               >
                 <MessageCircle size={14} />
-                (11) 99999-9999
+                (22) 99208-2292
               </a>
-              <p>@chamaocreatelie</p>
+              <p>@chama_ocre</p>
               <p className="leading-relaxed">
                 Pedidos personalizados<br />
                 e kits sob encomenda

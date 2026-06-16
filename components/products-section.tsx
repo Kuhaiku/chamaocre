@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ShoppingBag, Star, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 
-// Definindo a interface para o TypeScript ajudar no autocompletar
+// Interface para o TypeScript ajudar no autocompletar
 interface Product {
   id: number;
   name: string;
@@ -23,7 +24,7 @@ export function ProductsSection() {
   const ref = useRef<HTMLElement>(null)
   const [hovered, setHovered] = useState<number | null>(null)
   
-  // Novos estados para controlar a listagem vinda do banco
+  // Estados para controlar a listagem vinda do banco
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -46,7 +47,7 @@ export function ProductsSection() {
     fetchProducts();
   }, []);
 
-  // Observador de intersecção para animações (agora depende do carregamento)
+  // Observador de intersecção para animações
   useEffect(() => {
     if (isLoading || products.length === 0) return;
 
@@ -103,7 +104,7 @@ export function ProductsSection() {
             {products.map((product) => (
               <div
                 key={product.id}
-                className="reveal-prod opacity-0 group relative rounded-sm overflow-hidden border-ocre-glow bg-card hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C87A2C]/15"
+                className="reveal-prod opacity-0 group relative rounded-sm overflow-hidden border-ocre-glow bg-card hover:-translate-y-2 transition-all duration-500 hover:shadow-2xl hover:shadow-[#C87A2C]/15 flex flex-col"
                 onMouseEnter={() => setHovered(product.id)}
                 onMouseLeave={() => setHovered(null)}
               >
@@ -126,29 +127,21 @@ export function ProductsSection() {
                 </div>
 
                 {/* Content */}
-                <div className="p-7">
+                <div className="p-7 flex flex-col flex-grow">
                   {/* Line badge */}
                   <span className="text-xs tracking-[0.2em] uppercase text-[#C87A2C] font-medium">
                     {product.line}
                   </span>
 
-                  <h3 className="font-heading text-3xl font-light text-foreground mt-2 mb-4 group-hover:text-[#E59400] transition-colors duration-300">
+                  <h3 className="font-heading text-3xl font-light text-foreground mt-2 mb-5 group-hover:text-[#E59400] transition-colors duration-300">
                     {product.name}
                   </h3>
-
-                  {/* Stars */}
-                  <div className="flex items-center gap-1 mb-5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={12} className="fill-[#E59400] text-[#E59400]" />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">(4.9)</span>
-                  </div>
 
                   {/* Divider */}
                   <div className="h-px bg-border mb-5" />
 
                   {/* Notes */}
-                  <div className="space-y-2 mb-6">
+                  <div className="space-y-2 mb-6 flex-grow">
                     <div className="flex gap-2 text-sm">
                       <span className="text-[#C87A2C] font-medium min-w-fit">Notas:</span>
                       <span className="text-muted-foreground">{product.notes}</span>
@@ -160,7 +153,7 @@ export function ProductsSection() {
                   </div>
 
                   {/* Meta info */}
-                  <div className="flex gap-4 mb-6">
+                  <div className="flex gap-4 mb-8">
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Duração</div>
                       <div className="text-sm text-foreground font-medium">{product.burnTime}</div>
@@ -172,13 +165,14 @@ export function ProductsSection() {
                     </div>
                   </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between">
-                    <span className="font-heading text-2xl font-light text-foreground">{product.price}</span>
-                    <button className="flex items-center gap-2 bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs tracking-widest uppercase px-5 py-2.5 rounded-sm transition-all duration-300 font-medium">
-                      <ShoppingBag size={13} />
+                  {/* Footer - Botão Ver Detalhes (Ocupando largura total) */}
+                  <div className="mt-auto">
+                    <Link 
+                      href={`/produto/${product.id}`} 
+                      className="flex items-center justify-center w-full bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs tracking-widest uppercase px-5 py-3.5 rounded-sm transition-all duration-300 font-medium"
+                    >
                       Ver Detalhes
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -192,7 +186,7 @@ export function ProductsSection() {
             Quer criar um kit personalizado? Entre em contato e montamos a combinação perfeita para você.
           </p>
           <a
-            href="https://wa.me/5511999999999"
+            href="https://wa.me/5522992082292"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 border border-[#C87A2C]/60 hover:border-[#C87A2C] text-[#C87A2C] hover:text-[#E59400] tracking-widest uppercase text-sm px-8 py-3 rounded-sm transition-all duration-300"
