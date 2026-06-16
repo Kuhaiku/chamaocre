@@ -13,11 +13,9 @@ const navLinks = [
   { label: 'Contato', href: '/#footer' },
 ]
 
-export function Navbar() {
+export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  
-  // Controle de hidratação
   const [isMounted, setIsMounted] = useState(false)
   
   const { setIsOpen: setSacolaOpen, getTotalItems } = useCartStore()
@@ -30,11 +28,14 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // A Navbar fica sólida se o utilizador rolar a página OU se a prop forceSolid for verdadeira
+  const isSolid = scrolled || forceSolid
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-black/80 backdrop-blur-md border-b border-white/5 shadow-lg shadow-black/20'
+        isSolid
+          ? 'bg-black/90 backdrop-blur-md border-b border-white/5 shadow-lg shadow-black/20'
           : 'bg-transparent'
       }`}
     >
@@ -70,7 +71,6 @@ export function Navbar() {
             aria-label="Abrir sacola"
           >
             <ShoppingBag size={20} />
-            {/* Só exibe o badge se estiver montado e houver itens */}
             {isMounted && totalItems > 0 && (
               <span className="absolute top-0 right-0 bg-[#C87A2C] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center translate-x-1 -translate-y-1">
                 {totalItems}
