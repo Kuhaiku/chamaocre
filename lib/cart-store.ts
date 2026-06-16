@@ -6,22 +6,20 @@ export interface CartItem {
   name: string;
   price: number;
   image: string;
-  weight: string; // Importante manter o peso para o cálculo do Melhor Envio no checkout
+  weight: string;
   quantity: number;
 }
 
 interface CartState {
   items: CartItem[];
-  isOpen: boolean; // Controla se o painel lateral da sacola está aberto ou fechado
+  isOpen: boolean;
   
-  // Ações
   setIsOpen: (isOpen: boolean) => void;
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
   
-  // Cálculos
   getTotalItems: () => number;
   getSubtotal: () => number;
 }
@@ -38,16 +36,14 @@ export const useCartStore = create<CartState>()(
         const existingItem = state.items.find((item) => item.id === newItem.id);
         
         if (existingItem) {
-          // Se o produto já está na sacola, apenas aumenta a quantidade
           return {
             items: state.items.map((item) =>
               item.id === newItem.id ? { ...item, quantity: item.quantity + 1 } : item
             ),
-            isOpen: true, // Abre a sacola automaticamente ao adicionar
+            isOpen: true,
           };
         }
         
-        // Se for um produto novo, adiciona com quantidade 1
         return { 
           items: [...state.items, { ...newItem, quantity: 1 }], 
           isOpen: true 
@@ -60,7 +56,6 @@ export const useCartStore = create<CartState>()(
 
       updateQuantity: (id, quantity) => set((state) => {
         if (quantity <= 0) {
-          // Se a quantidade chegar a zero, remove o item
           return { items: state.items.filter(item => item.id !== id) };
         }
         return {
@@ -74,11 +69,12 @@ export const useCartStore = create<CartState>()(
 
       getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
       
-      getSubtotal: () => get().items.reduce((total, item) => total + (item.price * item.quantity), 0),
+      // TRAVA DE SEGURANÇA: Number(item.price || 0) garante que o cálculo nunca falhe
+      getSubtotal: () => get().items.reduce((total, item) => total + (Number(item.price || 0) * item.quantity), 0),
     }),
     {
-      name: 'chama-ocre-cart', // Nome da chave que ficará salva no LocalStorage do navegador
-      partialize: (state) => ({ items: state.items }), // Salva apenas os itens, ignorando se a sacola está aberta ou não
+      name: 'chama-ocre-cart',
+      partialize: (state) => ({ items: state.items }),
     }
   )
 );

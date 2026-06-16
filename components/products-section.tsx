@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ShoppingBag } from 'lucide-react'
+import { useCartStore } from '@/lib/cart-store'
 
-// Interface para o TypeScript ajudar no autocompletar
 interface Product {
   id: number;
   name: string;
@@ -24,11 +24,12 @@ export function ProductsSection() {
   const ref = useRef<HTMLElement>(null)
   const [hovered, setHovered] = useState<number | null>(null)
   
-  // Estados para controlar a listagem vinda do banco
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // Busca os produtos na API quando o componente é montado
+  // Traz a função de adicionar à sacola do estado global
+  const addItemToCart = useCartStore((state) => state.addItem)
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -47,7 +48,6 @@ export function ProductsSection() {
     fetchProducts();
   }, []);
 
-  // Observador de intersecção para animações
   useEffect(() => {
     if (isLoading || products.length === 0) return;
 
@@ -70,12 +70,23 @@ export function ProductsSection() {
     return () => observer.disconnect()
   }, [isLoading, products]);
 
+  // Função para lidar com a adição rápida à sacola
+  const handleComprarRapido = (product: Product) => {
+    addItemToCart({
+      id: product.id,
+      name: product.name,
+      price: Number(product.price),
+      image: product.image,
+      weight: product.weight,
+    })
+  }
+
   return (
     <section id="produtos" ref={ref} className="py-28 md:py-36 relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(139,69,34,0.07)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6">
-        {/* Header */}
+        
         <div className="text-center mb-20">
           <span className="reveal-prod opacity-0 block text-xs tracking-[0.3em] uppercase text-[#C87A2C] font-medium mb-5">
             Catálogo
@@ -89,7 +100,6 @@ export function ProductsSection() {
           </p>
         </div>
 
-        {/* Loading ou Product cards */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-[#C87A2C]">
             <Loader2 className="w-10 h-10 animate-spin mb-4" />
@@ -108,14 +118,13 @@ export function ProductsSection() {
                 onMouseEnter={() => setHovered(product.id)}
                 onMouseLeave={() => setHovered(null)}
               >
-                {/* Tag Condicional */}
+                
                 {product.tag && (
                   <div className={`absolute top-4 left-4 z-10 ${product.tagColor || 'bg-stone-500'} text-white text-xs tracking-widest uppercase px-3 py-1 rounded-sm`}>
                     {product.tag}
                   </div>
                 )}
 
-                {/* Image */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
                   <Image
                     src={product.image}
@@ -126,9 +135,8 @@ export function ProductsSection() {
                   <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
                 </div>
 
-                {/* Content */}
                 <div className="p-7 flex flex-col flex-grow">
-                  {/* Line badge */}
+                  
                   <span className="text-xs tracking-[0.2em] uppercase text-[#C87A2C] font-medium">
                     {product.line}
                   </span>
@@ -137,10 +145,8 @@ export function ProductsSection() {
                     {product.name}
                   </h3>
 
-                  {/* Divider */}
                   <div className="h-px bg-border mb-5" />
 
-                  {/* Notes */}
                   <div className="space-y-2 mb-6 flex-grow">
                     <div className="flex gap-2 text-sm">
                       <span className="text-[#C87A2C] font-medium min-w-fit">Notas:</span>
@@ -152,7 +158,6 @@ export function ProductsSection() {
                     </div>
                   </div>
 
-                  {/* Meta info */}
                   <div className="flex gap-4 mb-8">
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Duração</div>
@@ -165,22 +170,31 @@ export function ProductsSection() {
                     </div>
                   </div>
 
-                  {/* Footer - Botão Ver Detalhes (Ocupando largura total) */}
-                  <div className="mt-auto">
+                  {/* Footer - Botões Lado a Lado */}
+                  <div className="mt-auto flex items-center gap-3">
                     <Link 
                       href={`/produto/${product.id}`} 
-                      className="flex items-center justify-center w-full bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs tracking-widest uppercase px-5 py-3.5 rounded-sm transition-all duration-300 font-medium"
+                      className="flex-1 flex items-center justify-center border border-[#C87A2C] text-[#C87A2C] hover:bg-[#C87A2C] hover:text-white text-xs tracking-widest uppercase px-4 py-3.5 rounded-sm transition-colors duration-300 font-medium"
                     >
                       Ver Detalhes
                     </Link>
+                    
+                    <button 
+                      onClick={() => handleComprarRapido(product)}
+                      className="w-12 h-12 flex-shrink-0 bg-[#C87A2C] hover:bg-[#E59400] text-white flex items-center justify-center rounded-sm transition-transform duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg hover:shadow-[#C87A2C]/20"
+                      aria-label="Adicionar à sacola"
+                      title="Adicionar à sacola"
+                    >
+                      <ShoppingBag size={18} />
+                    </button>
                   </div>
+
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* CTA */}
         <div className="text-center mt-16 reveal-prod opacity-0">
           <p className="text-muted-foreground mb-6 text-sm tracking-wide">
             Quer criar um kit personalizado? Entre em contato e montamos a combinação perfeita para você.

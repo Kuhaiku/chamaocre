@@ -1,14 +1,18 @@
 import mysql from 'mysql2/promise';
 
 const pool = mysql.createPool({
-  host: '136.248.87.149',
-  port: 3051, // Convertido para number, que é o formato exigido pelo mysql2
-  user: 'root',
-  password: 'Raposo88125442@@',
-  database: 'chama_ocre',
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT), // Converte a string do .env para número
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  maxIdle: 10, 
+  idleTimeout: 60000, 
+  queueLimit: 0,
+  enableKeepAlive: true, 
+  keepAliveInitialDelay: 0
 });
 
 export default pool;
