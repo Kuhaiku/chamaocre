@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { writeFile, unlink } from 'fs/promises';
+import { writeFile, unlink, rm, mkdir } from 'fs/promises';
 import path from 'path';
 import pool from '@/lib/db';
+
+const sanitizeName = (str: string) => {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
 
 export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -32,20 +36,43 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
     if (totalImagens > 0) {
       const imagem = data.get(`imagem_0`) as File;
       if (imagem && imagem.size > 0) {
+        
+        // Busca a imagem atual para descobrir em qual pasta ela está
+        const [rows]: any = await pool.execute('SELECT image FROM produtos WHERE id = ?', [id]);
+        let safeFolderName = '';
+        
+        if (rows.length > 0 && rows[0].image) {
+          // Extrai o nome da pasta da URL antiga (Ex: /produtos/vela-bosque/img.png -> vela-bosque)
+          const parts = rows[0].image.split('/');
+          if (parts[1] === 'produtos' && parts.length >= 3) {
+            safeFolderName = parts[2];
+          }
+        }
+        
+        // Se por algum motivo não achar a pasta antiga, cria uma baseada no nome atual
+        if (!safeFolderName) {
+           safeFolderName = sanitizeName(name) || `produto-${id}`;
+        }
+
+        const uploadDir = path.join(process.cwd(), 'public', 'produtos', safeFolderName);
+        await mkdir(uploadDir, { recursive: true }); // Garante que a pasta existe
+
         const bytes = await imagem.arrayBuffer();
         const buffer = Buffer.from(bytes);
         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
         const filename = `${uniqueSuffix}-${imagem.name.replace(/\s+/g, '-')}`;
-        const uploadDir = path.join(process.cwd(), 'public', 'images');
         const filepath = path.join(uploadDir, filename);
+        
         await writeFile(filepath, buffer);
-        imageUrlCapa = `/images/${filename}`;
+        imageUrlCapa = `/produtos/${safeFolderName}/${filename}`;
 
-        const [rows]: any = await pool.execute('SELECT image FROM produtos WHERE id = ?', [id]);
+        // Deleta a foto de capa antiga
         if (rows.length > 0 && rows[0].image) {
           try {
-            const oldFilename = rows[0].image.split('/').pop();
-            await unlink(path.join(uploadDir, oldFilename));
+            // Reconstrói o caminho completo a partir da URL guardada no banco
+            const oldPathParts = rows[0].image.split('/').filter(Boolean);
+            const oldFilepath = path.join(process.cwd(), 'public', ...oldPathParts);
+            await unlink(oldFilepath);
           } catch (e) { console.log("Imagem antiga não encontrada para deletar"); }
         }
       }
@@ -73,13 +100,19 @@ export async function DELETE(request: Request, props: { params: Promise<{ id: st
     const id = params.id;
 
     const [rows]: any = await pool.execute('SELECT image FROM produtos WHERE id = ?', [id]);
+    
+    // Pega o caminho da imagem e deleta a PASTA INTEIRA do produto
     if (rows.length > 0 && rows[0].image) {
-      const filename = rows[0].image.split('/').pop();
-      const filepath = path.join(process.cwd(), 'public', 'images', filename);
-      try {
-        await unlink(filepath);
-      } catch (err) {
-        console.log('Arquivo não encontrado');
+      const parts = rows[0].image.split('/');
+      if (parts[1] === 'produtos' && parts.length >= 3) {
+        const folderName = parts[2];
+        const folderPath = path.join(process.cwd(), 'public', 'produtos', folderName);
+        try {
+          // rm(..., { recursive: true }) é igual a deletar a pasta e tudo que tem dentro
+          await rm(folderPath, { recursive: true, force: true });
+        } catch (err) {
+          console.log('Pasta não encontrada ou já deletada');
+        }
       }
     }
 

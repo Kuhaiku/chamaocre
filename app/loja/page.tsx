@@ -8,7 +8,6 @@ import { Footer } from '@/components/footer'
 import { Search, SlidersHorizontal, Loader2, X, ShoppingBag, FilterX, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
 
-// Função auxiliar para tratar a galeria vinda do banco de dados com segurança
 const parseGaleria = (galeriaRaw: any) => {
   if (!galeriaRaw) return [];
   if (Array.isArray(galeriaRaw)) return galeriaRaw;
@@ -27,8 +26,8 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
   const [quantidade, setQuantidade] = useState(1);
   const [currentImg, setCurrentImg] = useState(0);
 
+  const estoqueDisponivel = Number(product.estoque || 0);
   const galeriaArray = parseGaleria(product.galeria);
-  // Filtra para remover itens nulos/vazios e cria um Array único
   const todasImagens = Array.from(new Set([product.image, ...galeriaArray].filter(Boolean)));
 
   const nextImg = (e: React.MouseEvent) => {
@@ -44,9 +43,7 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
   return (
     <div className="group bg-white border border-stone-200 rounded-sm overflow-hidden flex flex-col hover:border-[#C87A2C]/50 transition-colors">
       
-      {/* Carrossel de Imagens */}
       <div className="relative aspect-square overflow-hidden bg-stone-100 block group/carousel">
-        {/* A imagem principal já não tem Link, evitando clique acidental */}
         <div className="absolute inset-0 z-0">
           {product.tag && (
             <div className={`absolute top-3 left-3 z-20 ${product.tagColor || 'bg-stone-500'} text-white text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-sm`}>
@@ -61,7 +58,6 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
           />
         </div>
 
-        {/* Controles do Carrossel (Só aparecem se houver mais de 1 foto) */}
         {todasImagens.length > 1 && (
           <>
             <button 
@@ -79,7 +75,6 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
               <ChevronRight size={16} />
             </button>
             
-            {/* Indicadores (Bolinhas) */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
               {todasImagens.map((_, i) => (
                 <div 
@@ -100,9 +95,14 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
         <p className="text-xs text-stone-500 mb-4 line-clamp-1">{product.notes}</p>
         
         <div className="mt-auto">
-          <span className="text-lg font-medium text-stone-900 block mb-4">
-            R$ {Number(product.price).toFixed(2).replace('.', ',')}
-          </span>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-lg font-medium text-stone-900 block">
+              R$ {Number(product.price).toFixed(2).replace('.', ',')}
+            </span>
+            <span className="text-[10px] text-stone-400 uppercase tracking-widest font-medium">
+              Restam {estoqueDisponivel}
+            </span>
+          </div>
           
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
                 </button>
                 <span className="w-6 text-center text-sm font-medium text-stone-800">{quantidade}</span>
                 <button 
-                  onClick={() => setQuantidade(quantidade + 1)} 
+                  onClick={() => setQuantidade(Math.min(estoqueDisponivel, quantidade + 1))} 
                   className="px-3 h-full text-stone-500 hover:text-[#C87A2C] outline-none"
                 >
                   +
@@ -173,11 +173,17 @@ export default function LojaPage() {
     fetchProdutos()
   }, [])
 
-  const linhasUnicas = useMemo(() => Array.from(new Set(produtos.map(p => p.line))), [produtos])
+  const linhasUnicas = useMemo(() => {
+    // Filtra apenas produtos com estoque para extrair as linhas
+    const emEstoque = produtos.filter(p => Number(p.estoque) > 0)
+    return Array.from(new Set(emEstoque.map(p => p.line)))
+  }, [produtos])
   
   const sensacoesUnicas = useMemo(() => {
     const todasSensacoes = new Set<string>();
-    produtos.forEach(p => {
+    // Filtra apenas produtos com estoque para extrair as sensações
+    const emEstoque = produtos.filter(p => Number(p.estoque) > 0)
+    emEstoque.forEach(p => {
       if (p.feeling) {
         const feelings = p.feeling.split(',').map((f: string) => f.trim()).filter((f: string) => f !== '');
         feelings.forEach((f: string) => todasSensacoes.add(f));
@@ -187,7 +193,8 @@ export default function LojaPage() {
   }, [produtos])
 
   const produtosFiltrados = useMemo(() => {
-    let filtrados = [...produtos]
+    // Remove os produtos com estoque 0 ou nulo logo no início
+    let filtrados = produtos.filter(p => Number(p.estoque) > 0)
 
     if (busca) {
       filtrados = filtrados.filter(p => p.name.toLowerCase().includes(busca.toLowerCase()))

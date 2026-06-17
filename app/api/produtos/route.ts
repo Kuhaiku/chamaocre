@@ -3,6 +3,17 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import pool from '@/lib/db';
 
+// Função para transformar "Vela Maçã & Canela" em "vela-maca-canela" (Seguro para pastas)
+const sanitizeName = (str: string) => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')      // Troca espaços e símbolos por traços
+    .replace(/-+/g, '-')             // Remove traços duplicados
+    .replace(/^-|-$/g, '');          // Remove traços nas pontas
+}
+
 export async function POST(request: Request) {
   try {
     const data = await request.formData();
@@ -19,7 +30,6 @@ export async function POST(request: Request) {
     const tag = data.get('tag') as string || '';
     const tagColor = data.get('tagColor') as string || 'bg-stone-500';
     
-    // Novas dimensões
     const altura = data.get('altura') as string || '0';
     const largura = data.get('largura') as string || '0';
     const comprimento = data.get('comprimento') as string || '0';
@@ -30,7 +40,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Campos obrigatórios ou imagens faltando' }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), 'public', 'images');
+    // Cria a pasta baseada no nome do produto
+    const safeFolderName = sanitizeName(name) || `produto-${Date.now()}`;
+    const uploadDir = path.join(process.cwd(), 'public', 'produtos', safeFolderName);
+    
+    // Cria a pasta recursivamente (cria a 'produtos' e a 'sub-pasta' se não existirem)
     await mkdir(uploadDir, { recursive: true });
 
     let imageUrlCapa = '';
@@ -47,7 +61,9 @@ export async function POST(request: Request) {
         const filepath = path.join(uploadDir, filename);
         
         await writeFile(filepath, buffer);
-        const url = `/images/${filename}`;
+        
+        // A URL salva no banco agora aponta para a nova pasta
+        const url = `/produtos/${safeFolderName}/${filename}`;
         
         imagensSalvas.push({ url, ordem: i });
         
@@ -58,11 +74,11 @@ export async function POST(request: Request) {
     }
 
     const queryProd = `
-      INSERT INTO produtos (name, line, historia, notes, feeling, burnTime, weight, price, tag, tagColor, image, altura, largura, comprimento) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO produtos (name, line, historia, notes, feeling, burnTime, weight, price, estoque, tag, tagColor, image, altura, largura, comprimento) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [resultProd] = await pool.execute(queryProd, [
-      name, line, historia, notes, feeling, burnTime, weight, price, tag, tagColor, imageUrlCapa, altura, largura, comprimento
+      name, line, historia, notes, feeling, burnTime, weight, price, estoque, tag, tagColor, imageUrlCapa, altura, largura, comprimento
     ]);
     
     const produtoId = (resultProd as any).insertId;
@@ -87,10 +103,8 @@ export async function GET() {
     const query = 'SELECT * FROM produtos ORDER BY criado_em DESC';
     const [produtos]: any = await pool.execute(query);
 
-    // BUSTA TODAS AS IMAGENS DA TABELA DE GALERIA
     const [imagens]: any = await pool.execute('SELECT produto_id, imagem_url FROM produto_imagens ORDER BY ordem ASC');
 
-    // AGRUPA AS IMAGENS COM OS SEUS DEVIDOS PRODUTOS
     const produtosComGaleria = produtos.map((prod: any) => {
       const fotosDesteProduto = imagens
         .filter((img: any) => img.produto_id === prod.id)
