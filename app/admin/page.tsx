@@ -90,7 +90,7 @@ export default function AdminDashboard() {
     setGaleria(novaGaleria);
   };
 
- const handleEditClick = async (produto: any) => {
+const handleEditClick = async (produto: any) => {
     setProdutoEditando(produto);
     setGaleria([]); 
     setActiveTab("form-produto");

@@ -7,6 +7,21 @@ import { ShoppingBag, ArrowLeft, Loader2, Wind, Clock, Scale, Sparkles } from "l
 import { Navbar } from "@/components/navbar";
 import { useCartStore } from "@/lib/cart-store";
 
+// Função auxiliar para tratar a galeria vinda do banco de dados com segurança
+const parseGaleria = (galeriaRaw: any) => {
+  if (!galeriaRaw) return [];
+  if (Array.isArray(galeriaRaw)) return galeriaRaw;
+  if (typeof galeriaRaw === 'string') {
+    try {
+      const parsed = JSON.parse(galeriaRaw);
+      return Array.isArray(parsed) ? parsed : [galeriaRaw];
+    } catch (e) {
+      return [galeriaRaw];
+    }
+  }
+  return [];
+};
+
 export default function ProdutoDetalhes(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
   const id = params.id;
@@ -14,6 +29,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
   const [produto, setProduto] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [imagemPrincipal, setImagemPrincipal] = useState<string>("");
+  const [imagensUnicas, setImagensUnicas] = useState<string[]>([]);
   
   const [dominantRGB, setDominantRGB] = useState<string>("200, 122, 44");
 
@@ -27,6 +43,11 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
           const data = await res.json();
           setProduto(data.produto);
           setImagemPrincipal(data.produto.image);
+
+          // Trata a galeria lida do banco para exibir as miniaturas
+          const galeriaArray = parseGaleria(data.produto.galeria);
+          const todasImagens = Array.from(new Set([data.produto.image, ...galeriaArray].filter(Boolean)));
+          setImagensUnicas(todasImagens as string[]);
         }
       } catch (error) {
         console.error("Erro ao carregar detalhes do produto:", error);
@@ -73,6 +94,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
       price: Number(produto.price),
       image: produto.image,
       weight: produto.weight,
+      quantity: 1
     });
   };
 
@@ -96,14 +118,10 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
     );
   }
 
-  const todasImagens = [produto.image, ...(produto.galeria || [])];
-  const imagensUnicas = Array.from(new Set(todasImagens));
-
   return (
     <div 
       className="min-h-screen font-sans text-stone-300 relative transition-colors duration-1000"
       style={{ 
-        // CORREÇÃO: Separando backgroundImage e backgroundColor para evitar conflito no React
         backgroundImage: `linear-gradient(to bottom, rgba(${dominantRGB}, 0.25) 0%, #0a0a0a 60%)`,
         backgroundColor: '#0a0a0a'
       }}
@@ -149,19 +167,20 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
               />
             </div>
 
+            {/* Mini-Galeria (Aparece apenas se houverem imagens adicionais) */}
             {imagensUnicas.length > 1 && (
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 {imagensUnicas.map((imgUrl, index) => (
                   <button 
                     key={index}
-                    onClick={() => setImagemPrincipal(imgUrl as string)}
+                    onClick={() => setImagemPrincipal(imgUrl)}
                     className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-sm overflow-hidden border transition-all duration-300"
                     style={{
                       borderColor: imagemPrincipal === imgUrl ? `rgb(${dominantRGB})` : 'transparent',
                       opacity: imagemPrincipal === imgUrl ? 1 : 0.4
                     }}
                   >
-                    <Image src={imgUrl as string} alt={`Miniatura ${index}`} fill className="object-cover" />
+                    <Image src={imgUrl} alt={`Miniatura ${index}`} fill className="object-cover" />
                   </button>
                 ))}
               </div>

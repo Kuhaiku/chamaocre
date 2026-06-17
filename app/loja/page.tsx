@@ -5,31 +5,94 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { Search, SlidersHorizontal, Loader2, X, ShoppingBag, FilterX } from 'lucide-react'
+import { Search, SlidersHorizontal, Loader2, X, ShoppingBag, FilterX, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
 
-// Componente individual do Produto isolado para gerenciar a quantidade
+// Função auxiliar para tratar a galeria vinda do banco de dados com segurança
+const parseGaleria = (galeriaRaw: any) => {
+  if (!galeriaRaw) return [];
+  if (Array.isArray(galeriaRaw)) return galeriaRaw;
+  if (typeof galeriaRaw === 'string') {
+    try {
+      const parsed = JSON.parse(galeriaRaw);
+      return Array.isArray(parsed) ? parsed : [galeriaRaw];
+    } catch (e) {
+      return [galeriaRaw];
+    }
+  }
+  return [];
+};
+
 function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: number) => void }) {
   const [quantidade, setQuantidade] = useState(1);
+  const [currentImg, setCurrentImg] = useState(0);
+
+  const galeriaArray = parseGaleria(product.galeria);
+  // Filtra para remover itens nulos/vazios e cria um Array único
+  const todasImagens = Array.from(new Set([product.image, ...galeriaArray].filter(Boolean)));
+
+  const nextImg = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCurrentImg((prev) => (prev + 1) % todasImagens.length);
+  };
+
+  const prevImg = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCurrentImg((prev) => (prev - 1 + todasImagens.length) % todasImagens.length);
+  };
 
   return (
     <div className="group bg-white border border-stone-200 rounded-sm overflow-hidden flex flex-col hover:border-[#C87A2C]/50 transition-colors">
       
-      <div className="relative aspect-square overflow-hidden bg-stone-100 block">
-        {product.tag && (
-          <div className={`absolute top-3 left-3 z-10 ${product.tagColor || 'bg-stone-500'} text-white text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-sm`}>
-            {product.tag}
-          </div>
+      {/* Carrossel de Imagens */}
+      <div className="relative aspect-square overflow-hidden bg-stone-100 block group/carousel">
+        {/* A imagem principal já não tem Link, evitando clique acidental */}
+        <div className="absolute inset-0 z-0">
+          {product.tag && (
+            <div className={`absolute top-3 left-3 z-20 ${product.tagColor || 'bg-stone-500'} text-white text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-sm`}>
+              {product.tag}
+            </div>
+          )}
+          <Image
+            src={todasImagens[currentImg] as string}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </div>
+
+        {/* Controles do Carrossel (Só aparecem se houver mais de 1 foto) */}
+        {todasImagens.length > 1 && (
+          <>
+            <button 
+              onClick={prevImg} 
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-stone-700 p-1.5 rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all shadow-sm"
+              aria-label="Foto anterior"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button 
+              onClick={nextImg} 
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-stone-700 p-1.5 rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all shadow-sm"
+              aria-label="Próxima foto"
+            >
+              <ChevronRight size={16} />
+            </button>
+            
+            {/* Indicadores (Bolinhas) */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+              {todasImagens.map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-1.5 h-1.5 rounded-full transition-colors shadow-sm ${i === currentImg ? 'bg-[#C87A2C]' : 'bg-black/30'}`} 
+                />
+              ))}
+            </div>
+          </>
         )}
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
       </div>
 
-      <div className="p-5 flex flex-col flex-grow">
+      <div className="p-5 flex flex-col flex-grow relative z-10 bg-white">
         <span className="text-[10px] tracking-[0.2em] uppercase text-[#C87A2C] font-medium mb-1 block">
           {product.line}
         </span>
@@ -42,7 +105,6 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
           </span>
           
           <div className="flex flex-col gap-3">
-            
             <div className="flex items-center gap-2">
               <div className="flex items-center border border-stone-200 rounded-sm h-11 bg-stone-50">
                 <button 
@@ -74,7 +136,6 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
             >
               Ver Detalhes
             </Link>
-            
           </div>
         </div>
       </div>
@@ -138,7 +199,7 @@ export default function LojaPage() {
       filtrados = filtrados.filter(p => {
         if (!p.feeling) return false;
         const productFeelings = p.feeling.split(',').map((f: string) => f.trim());
-        return productFeelings.some(f => sensacoesSelecionadas.includes(f));
+        return productFeelings.some((f: string) => sensacoesSelecionadas.includes(f));
       });
     }
     if (ordenacao === 'menor_preco') {
