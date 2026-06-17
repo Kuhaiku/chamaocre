@@ -85,8 +85,24 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const query = 'SELECT * FROM produtos ORDER BY criado_em DESC';
-    const [rows] = await pool.execute(query);
-    return NextResponse.json({ produtos: rows });
+    const [produtos]: any = await pool.execute(query);
+
+    // BUSTA TODAS AS IMAGENS DA TABELA DE GALERIA
+    const [imagens]: any = await pool.execute('SELECT produto_id, imagem_url FROM produto_imagens ORDER BY ordem ASC');
+
+    // AGRUPA AS IMAGENS COM OS SEUS DEVIDOS PRODUTOS
+    const produtosComGaleria = produtos.map((prod: any) => {
+      const fotosDesteProduto = imagens
+        .filter((img: any) => img.produto_id === prod.id)
+        .map((img: any) => img.imagem_url);
+      
+      return {
+        ...prod,
+        galeria: fotosDesteProduto
+      };
+    });
+
+    return NextResponse.json({ produtos: produtosComGaleria });
   } catch (error) {
     console.error('Erro ao listar produtos:', error);
     return NextResponse.json({ error: 'Erro ao buscar produtos' }, { status: 500 });
