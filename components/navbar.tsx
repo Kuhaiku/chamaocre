@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Menu, X, ShoppingBag } from 'lucide-react'
+import { Menu, X, ShoppingBag, User } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
+import { useAuthStore } from '@/lib/auth-store'
 
 const navLinks = [
   { label: 'Início', href: '/' },
@@ -18,7 +19,10 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
   const [scrolled, setScrolled] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   
+  // ✅ CORRETO: Hooks chamados dentro do componente
   const { setIsOpen: setSacolaOpen, getTotalItems } = useCartStore()
+  const openLogin = useAuthStore((state) => state.openLogin) 
+  
   const totalItems = getTotalItems()
 
   useEffect(() => {
@@ -28,7 +32,6 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // A Navbar fica sólida se o utilizador rolar a página OU se a prop forceSolid for verdadeira
   const isSolid = scrolled || forceSolid
 
   return (
@@ -65,6 +68,17 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
         </nav>
 
         <div className="flex items-center gap-4">
+          
+          {/* Botão de Minha Conta */}
+          <button
+            onClick={openLogin}
+            className="relative p-2 text-stone-300 hover:text-[#C87A2C] transition-colors"
+            aria-label="Minha Conta"
+          >
+            <User size={20} />
+          </button>
+
+          {/* Botão da Sacola */}
           <button
             onClick={() => setSacolaOpen(true)}
             className="relative p-2 text-stone-300 hover:text-[#C87A2C] transition-colors"
@@ -78,6 +92,7 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
             )}
           </button>
 
+          {/* Menu Mobile */}
           <button
             className="md:hidden text-stone-300 hover:text-[#C87A2C] transition-colors"
             onClick={() => setIsOpen(!isOpen)}
@@ -88,6 +103,7 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
         </div>
       </div>
 
+      {/* Dropdown Mobile */}
       {isOpen && (
         <div className="md:hidden bg-black/95 backdrop-blur-md border-t border-white/10 px-6 py-6 flex flex-col gap-5">
           {navLinks.map((link) => (

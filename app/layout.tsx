@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, Inter } from 'next/font/google'
+import { AuthDrawer } from '@/components/auth-drawer';
 import './globals.css'
 
 // Importação do componente da sacola de compras
@@ -44,7 +45,7 @@ export default function RootLayout({
         
         {/* Adição do Drawer da Sacola globalmente */}
         <CartDrawer />
-        
+        <AuthDrawer />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
