@@ -1,21 +1,31 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
-import { useCartStore } from '@/lib/cart-store';
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { X, Trash2, ShoppingBag } from 'lucide-react'
+import { useCartStore } from '@/lib/cart-store'
+import { useAuthStore } from '@/lib/auth-store'
 
 export function CartDrawer() {
-  const { isOpen, setIsOpen, items, updateQuantity, removeItem, getSubtotal } = useCartStore();
-  
-  const [isMounted, setIsMounted] = useState(false);
+  const { items, isOpen, setIsOpen, removeItem, updateQuantity, getTotalPrice } = useCartStore()
+  const { user, openLogin } = useAuthStore()
+  const [isMounted, setIsMounted] = useState(false)
+
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    setIsMounted(true)
+  }, [])
 
-  if (!isMounted) return null;
+  if (!isMounted) return null
 
-  const subtotal = getSubtotal();
+  const handleCheckout = () => {
+    if (!user) {
+      setIsOpen(false)
+      openLogin()
+    } else {
+      console.log('Indo para checkout...')
+      // Lógica de checkout virá aqui
+    }
+  }
 
   return (
     <>
@@ -27,99 +37,85 @@ export function CartDrawer() {
       <div className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         
         <div className="flex items-center justify-between p-6 border-b border-stone-100">
-          <h2 className="text-lg font-heading text-stone-900 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5" />
-            Sua Sacola
+          <h2 className="text-lg font-heading font-medium tracking-widest uppercase flex items-center gap-2 text-stone-900">
+            <ShoppingBag size={18} /> Sua Sacola
           </h2>
-          <button 
-            onClick={() => setIsOpen(false)}
-            className="p-2 text-stone-400 hover:text-stone-700 transition-colors outline-none"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={() => setIsOpen(false)} className="p-2 text-stone-400 hover:text-stone-700 transition-colors">
+            <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-stone-500 space-y-4">
-              <ShoppingBag className="w-12 h-12 opacity-20" />
-              <p>Sua sacola está vazia.</p>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-[#C87A2C] font-medium hover:underline outline-none"
-              >
-                Continuar comprando
-              </button>
+            <div className="h-full flex flex-col items-center justify-center text-stone-400 space-y-4">
+              <ShoppingBag size={48} strokeWidth={1} />
+              <p className="text-sm uppercase tracking-widest">Sua sacola está vazia</p>
             </div>
           ) : (
-            items.map((item) => (
-              <div key={item.id} className="flex gap-4">
-                <div className="relative w-20 h-20 rounded-sm overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
-                  <Image src={item.image || '/placeholder.png'} alt={item.name || 'Produto'} fill className="object-cover" />
-                </div>
-                
-                <div className="flex-1 flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-2">
-                    <div>
-                      <h3 className="text-sm font-medium text-stone-900 leading-tight">{item.name}</h3>
-                      <p className="text-xs text-stone-500 mt-0.5">{item.weight}</p>
-                    </div>
-                    {/* TRAVA DE SEGURANÇA AQUI TAMBÉM */}
-                    <p className="text-sm font-medium text-stone-900 whitespace-nowrap">
-                      R$ {Number(item.price || 0).toFixed(2).replace('.', ',')}
-                    </p>
+            <div className="space-y-6">
+              {items.map((item) => (
+                <div key={item.id} className="flex gap-4 group">
+                  <div className="relative w-20 h-24 bg-stone-100 rounded-sm overflow-hidden flex-shrink-0 border border-stone-200">
+                    {item.image && (
+                      <Image src={item.image} alt={item.name} fill className="object-cover" />
+                    )}
                   </div>
                   
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center border border-stone-200 rounded-sm">
-                      <button 
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="p-1 text-stone-500 hover:text-[#C87A2C] transition-colors outline-none"
-                      >
-                        <Minus className="w-3.5 h-3.5" />
-                      </button>
-                      <span className="w-8 text-center text-xs font-medium text-stone-700">
-                        {item.quantity}
-                      </span>
-                      <button 
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="p-1 text-stone-500 hover:text-[#C87A2C] transition-colors outline-none"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
+                  <div className="flex flex-col flex-1 py-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-sm font-heading text-stone-900 mb-1 line-clamp-1">{item.name}</h3>
+                        <p className="text-[10px] text-stone-500 uppercase tracking-widest">{item.weight}</p>
+                      </div>
+                      <button onClick={() => removeItem(item.id)} className="text-stone-400 hover:text-red-500 transition-colors">
+                        <Trash2 size={16} />
                       </button>
                     </div>
                     
-                    <button 
-                      onClick={() => removeItem(item.id)}
-                      className="text-xs text-stone-400 hover:text-red-500 transition-colors flex items-center gap-1 outline-none"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      Remover
-                    </button>
+                    <div className="mt-auto flex items-center justify-between">
+                      <div className="flex items-center border border-stone-200 rounded-sm h-8 bg-stone-50">
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="px-2 text-stone-500 hover:text-[#C87A2C] transition-colors outline-none"
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center text-xs font-medium text-stone-800">{item.quantity}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={item.quantity >= item.estoque}
+                          className="px-2 text-stone-500 hover:text-[#C87A2C] transition-colors outline-none disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="text-sm font-medium text-stone-900">
+                        R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
         {items.length > 0 && (
           <div className="border-t border-stone-100 p-6 bg-stone-50">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-stone-600 text-sm font-medium">Subtotal</span>
-              <span className="text-xl font-heading font-medium text-stone-900">
-                R$ {Number(subtotal || 0).toFixed(2).replace('.', ',')}
-              </span>
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-sm text-stone-600 uppercase tracking-widest">Subtotal</span>
+              <span className="text-xl font-heading text-stone-900">R$ {getTotalPrice().toFixed(2).replace('.', ',')}</span>
             </div>
-            <p className="text-xs text-stone-500 mb-6">
-              Frete e impostos calculados no checkout.
-            </p>
-            <button className="w-full bg-[#C87A2C] hover:bg-[#E59400] text-white py-4 rounded-sm tracking-widest uppercase text-sm font-medium transition-all shadow-lg shadow-[#C87A2C]/20 outline-none">
+            
+            <button 
+              onClick={handleCheckout}
+              className="w-full bg-[#C87A2C] hover:bg-[#E59400] text-white py-4 rounded-sm tracking-widest uppercase text-sm font-bold transition-all shadow-md outline-none"
+            >
               Avançar para Checkout
             </button>
           </div>
         )}
       </div>
     </>
-  );
+  )
 }

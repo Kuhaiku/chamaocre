@@ -218,13 +218,14 @@ export default function LojaPage() {
     return filtrados
   }, [produtos, busca, linhasSelecionadas, sensacoesSelecionadas, ordenacao])
 
-  const handleComprar = (produto: any, quantidadeDesejada: number) => {
+const handleComprar = (produto: any, quantidadeDesejada: number) => {
     addItemToCart({
       id: produto.id,
       name: produto.name,
       price: Number(produto.price),
       image: produto.image,
       weight: produto.weight,
+      estoque: Number(produto.estoque), // <-- ADICIONE ESTA LINHA
       quantity: quantidadeDesejada
     })
   }

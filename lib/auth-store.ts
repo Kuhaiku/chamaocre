@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type AuthView = 'login' | 'register';
+// CORREÇÃO AQUI: Adicionado o 'forgot_password'
+type AuthView = 'login' | 'register' | 'forgot_password';
 
 export interface User {
   id: number;
@@ -13,7 +14,7 @@ export interface User {
 interface AuthState {
   isOpen: boolean;
   view: AuthView;
-  user: User | null; // Guarda os dados do cliente
+  user: User | null; 
   
   setIsOpen: (isOpen: boolean) => void;
   setView: (view: AuthView) => void;
@@ -38,8 +39,8 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null }),
     }),
     {
-      name: 'chama-ocre-auth', // Nome salvo no navegador
-      partialize: (state) => ({ user: state.user }), // Salva apenas o usuário logado
+      name: 'chama-ocre-auth', 
+      partialize: (state) => ({ user: state.user }), 
     }
   )
 );

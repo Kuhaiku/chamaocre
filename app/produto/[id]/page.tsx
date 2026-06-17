@@ -7,7 +7,6 @@ import { ShoppingBag, ArrowLeft, Loader2, Wind, Clock, Scale, Sparkles } from "l
 import { Navbar } from "@/components/navbar";
 import { useCartStore } from "@/lib/cart-store";
 
-// Função auxiliar para tratar a galeria vinda do banco de dados com segurança
 const parseGaleria = (galeriaRaw: any) => {
   if (!galeriaRaw) return [];
   if (Array.isArray(galeriaRaw)) return galeriaRaw;
@@ -30,7 +29,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
   const [isLoading, setIsLoading] = useState(true);
   const [imagemPrincipal, setImagemPrincipal] = useState<string>("");
   const [imagensUnicas, setImagensUnicas] = useState<string[]>([]);
-  
+  const [quantidade, setQuantidade] = useState(1);
   const [dominantRGB, setDominantRGB] = useState<string>("200, 122, 44");
 
   const addItemToCart = useCartStore((state) => state.addItem);
@@ -44,7 +43,6 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
           setProduto(data.produto);
           setImagemPrincipal(data.produto.image);
 
-          // Trata a galeria lida do banco para exibir as miniaturas
           const galeriaArray = parseGaleria(data.produto.galeria);
           const todasImagens = Array.from(new Set([data.produto.image, ...galeriaArray].filter(Boolean)));
           setImagensUnicas(todasImagens as string[]);
@@ -87,6 +85,8 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
     }
   };
 
+  const estoqueDisponivel = Number(produto?.estoque || 0);
+
   const handleAddToCart = () => {
     addItemToCart({
       id: produto.id,
@@ -94,7 +94,8 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
       price: Number(produto.price),
       image: produto.image,
       weight: produto.weight,
-      quantity: 1
+      estoque: estoqueDisponivel,
+      quantity: quantidade
     });
   };
 
@@ -167,7 +168,6 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
               />
             </div>
 
-            {/* Mini-Galeria (Aparece apenas se houverem imagens adicionais) */}
             {imagensUnicas.length > 1 && (
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 {imagensUnicas.map((imgUrl, index) => (
@@ -240,9 +240,32 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
               </p>
             </div>
 
+            {/* Controle de Quantidade Adicionado */}
+            <div className="flex items-center gap-4 mb-6">
+              <span className="text-xs uppercase tracking-widest text-stone-400">Quantidade</span>
+              <div className="flex items-center border border-white/20 rounded-sm h-11 bg-white/5">
+                <button 
+                  onClick={() => setQuantidade(Math.max(1, quantidade - 1))} 
+                  className="px-4 h-full text-stone-400 hover:text-white outline-none"
+                >
+                  -
+                </button>
+                <span className="w-8 text-center text-sm font-medium text-white">{quantidade}</span>
+                <button 
+                  onClick={() => setQuantidade(Math.min(estoqueDisponivel, quantidade + 1))} 
+                  className="px-4 h-full text-stone-400 hover:text-white outline-none"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-[10px] text-stone-500 uppercase tracking-widest">
+                {estoqueDisponivel} disponíveis
+              </span>
+            </div>
+
             <button 
               onClick={handleAddToCart}
-              className="w-full text-white flex items-center justify-center gap-3 py-5 rounded-sm tracking-widest uppercase text-sm font-semibold transition-all duration-500 shadow-xl hover:-translate-y-1"
+              className="w-full text-white flex items-center justify-center gap-3 py-5 rounded-sm tracking-widest uppercase text-sm font-semibold transition-all duration-500 shadow-xl hover:-translate-y-1 outline-none"
               style={{ 
                 backgroundColor: `rgb(${dominantRGB})`,
                 boxShadow: `0 15px 35px -10px rgba(${dominantRGB}, 0.6)`

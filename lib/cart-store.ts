@@ -1,82 +1,77 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  weight: string;
-  quantity: number;
+  id: string | number
+  name: string
+  price: number
+  image: string
+  weight: string
+  quantity: number
+  estoque: number // Nova propriedade obrigatória
 }
 
-interface CartState {
-  items: CartItem[];
-  isOpen: boolean;
-  
-  setIsOpen: (isOpen: boolean) => void;
-  // Agora aceitamos a quantidade como parâmetro opcional
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
-  removeItem: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
-  clearCart: () => void;
-  
-  getTotalItems: () => number;
-  getSubtotal: () => number;
+interface CartStore {
+  items: CartItem[]
+  isOpen: boolean
+  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void
+  removeItem: (id: string | number) => void
+  updateQuantity: (id: string | number, quantity: number) => void
+  clearCart: () => void
+  setIsOpen: (isOpen: boolean) => void
+  getTotalPrice: () => number
+  getTotalItems: () => number
 }
 
-export const useCartStore = create<CartState>()(
+export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
       isOpen: false,
-      
-      setIsOpen: (isOpen) => set({ isOpen }),
-      
-      addItem: (newItem) => set((state) => {
-        // Pega a quantidade informada ou usa 1 por padrão
-        const qtd = newItem.quantity || 1; 
-        const existingItem = state.items.find((item) => item.id === newItem.id);
-        
+      addItem: (item) => {
+        const currentItems = get().items
+        const existingItem = currentItems.find((i) => i.id === item.id)
+
         if (existingItem) {
-          return {
-            items: state.items.map((item) =>
-              item.id === newItem.id ? { ...item, quantity: item.quantity + qtd } : item
+          // Trava: Soma a quantidade atual da sacola com a nova, mas limita ao estoque máximo
+          const newQuantity = Math.min(existingItem.quantity + (item.quantity || 1), item.estoque)
+          set({
+            items: currentItems.map((i) =>
+              i.id === item.id ? { ...i, quantity: newQuantity } : i
             ),
             isOpen: true,
-          };
+          })
+        } else {
+          // Trava: Garante que a primeira adição não ultrapasse o estoque
+          const initialQuantity = Math.min(item.quantity || 1, item.estoque)
+          set({
+            items: [...currentItems, { ...item, quantity: initialQuantity }],
+            isOpen: true,
+          })
         }
+      },
+      removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
+      updateQuantity: (id, quantity) => {
+        const currentItems = get().items
+        const itemToUpdate = currentItems.find((i) => i.id === id)
+        if (!itemToUpdate) return
+
+        // Trava: Impede de aumentar no botão de + além do estoque
+        const validQuantity = Math.min(Math.max(1, quantity), itemToUpdate.estoque)
         
-        return { 
-          items: [...state.items, { ...newItem, quantity: qtd }], 
-          isOpen: true 
-        };
-      }),
-
-      removeItem: (id) => set((state) => ({
-        items: state.items.filter((item) => item.id !== id),
-      })),
-
-      updateQuantity: (id, quantity) => set((state) => {
-        if (quantity <= 0) {
-          return { items: state.items.filter(item => item.id !== id) };
-        }
-        return {
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
+        set({
+          items: currentItems.map((i) =>
+            i.id === id ? { ...i, quantity: validQuantity } : i
           ),
-        };
-      }),
-
+        })
+      },
       clearCart: () => set({ items: [] }),
-
+      setIsOpen: (isOpen) => set({ isOpen }),
+      getTotalPrice: () => get().items.reduce((total, item) => total + item.price * item.quantity, 0),
       getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
-      
-      getSubtotal: () => get().items.reduce((total, item) => total + (Number(item.price || 0) * item.quantity), 0),
     }),
     {
       name: 'chama-ocre-cart',
-      partialize: (state) => ({ items: state.items }),
     }
   )
-);
+)
