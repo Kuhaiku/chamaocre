@@ -26,56 +26,61 @@ export function AboutSection() {
   }, [])
 
   return (
-    <section id="sobre" ref={ref} className="py-28 md:py-36 relative overflow-hidden">
+    <section id="sobre" ref={ref} className="py-20 md:py-36 relative overflow-hidden">
       {/* Warm radial bg */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(ellipse,rgba(139,69,34,0.08)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-2 gap-16 items-center">
+        <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+          
           {/* Visual side */}
-          <div className="relative reveal-about opacity-0">
-            <div className="relative aspect-[4/5] rounded-sm overflow-hidden candle-glow">
+          <div className="relative w-full reveal-about opacity-0">
+            {/* Foto ocupando 100% da largura disponível com proporções ajustadas para mobile/desktop */}
+            <div className="relative w-full aspect-square sm:aspect-[4/3] md:aspect-[4/5] rounded-sm overflow-hidden candle-glow">
               <Image
-                src="images/1781616999166-204740326-produtos.jpg"
+                src="/images/gallery-1.png"
                 alt="Processo artesanal de criação das velas Chama Ocre"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"
+                priority
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent pointer-events-none" />
             </div>
 
-            {/* Floating badge */}
-            <div className="absolute -bottom-6 -right-6 md:-right-8 bg-card border border-[#C87A2C]/40 rounded-sm p-5 shadow-xl shadow-black/40 max-w-[180px]">
-              <div className="text-xs text-muted-foreground leading-relaxed tracking-wide uppercase">
+            {/* Floating badge - Ajustado para 'right-2' no mobile para não quebrar a largura da tela */}
+            <div className="absolute -bottom-6 right-2 md:-right-8 bg-card border border-[#C87A2C]/40 rounded-sm p-4 md:p-5 shadow-xl shadow-black/40 max-w-[140px] md:max-w-[180px] z-10">
+              <div className="text-[10px] md:text-xs text-muted-foreground leading-relaxed tracking-wide uppercase">
                 Feito à mão com amor e dedicação
               </div>
             </div>
 
             {/* Logo watermark */}
-            <div className="absolute top-6 left-6 w-16 h-16 rounded-full overflow-hidden border-2 border-[#C87A2C]/60 bg-background/80 backdrop-blur-sm">
+            <div className="absolute top-4 left-4 md:top-6 md:left-6 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-[#C87A2C]/60 bg-background/80 backdrop-blur-sm z-10">
               <Image
                 src="logo.png"
                 alt="Chama Ocre Ateliê"
                 fill
+                sizes="(max-width: 768px) 56px, 64px"
                 className="object-cover"
               />
             </div>
           </div>
 
           {/* Text side */}
-          <div className="space-y-8">
+          <div className="space-y-8 mt-6 md:mt-0">
             <div className="reveal-about opacity-0">
               <span className="text-xs tracking-[0.3em] uppercase text-[#C87A2C] font-medium">
                 Nossa História
               </span>
             </div>
 
-            <h2 className="font-heading text-5xl md:text-6xl font-light leading-tight text-balance reveal-about opacity-0">
+            <h2 className="font-heading text-4xl md:text-6xl font-light leading-tight text-balance reveal-about opacity-0">
               O Momento do{' '}
               <em className="italic text-[#E59400]">Aconchego</em>
             </h2>
 
-            <p className="text-muted-foreground leading-relaxed text-lg reveal-about opacity-0">
+            <p className="text-muted-foreground leading-relaxed text-base md:text-lg reveal-about opacity-0">
               A Chama Ocre Ateliê nasceu para transformar momentos comuns em experiências memoráveis.
               Cada vela é produzida artesanalmente, unindo aromas sofisticados, matérias-primas selecionadas
               e um design inspirado no conforto do outono.
@@ -89,9 +94,9 @@ export function AboutSection() {
 
             {/* Decorative divider */}
             <div className="reveal-about opacity-0 flex items-center gap-4">
-              <div className="w-120 h-px bg-[#C87A2C]/60" />
+              <div className="w-full md:w-120 h-px bg-[#C87A2C]/60" />
               <span className="text-[#C87A2C] text-lg">✦</span>
-              <div className="w-120 h-px bg-[#C87A2C]/60" />
+              <div className="w-full md:w-120 h-px bg-[#C87A2C]/60" />
             </div>
 
             {/* Values */}
@@ -104,9 +109,8 @@ export function AboutSection() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center gap-3 text-sm text-muted-foreground "
+                  className="flex items-center gap-3 text-sm text-muted-foreground"
                 >
-                  
                   <span className="tracking-wide">{item.label}</span>
                 </div>
               ))}
@@ -117,9 +121,9 @@ export function AboutSection() {
               className="reveal-about opacity-0 inline-flex items-center gap-3 text-sm tracking-widest uppercase text-[#C87A2C] hover:text-[#E59400] transition-colors duration-300 border-b border-[#C87A2C]/40 hover:border-[#E59400] pb-1"
             >
               Ver Coleção Completa
-              
             </button>
           </div>
+
         </div>
       </div>
     </section>

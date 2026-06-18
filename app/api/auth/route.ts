@@ -57,8 +57,7 @@ export async function POST(request: Request) {
       await pool.execute('UPDATE usuarios SET nome = ?, telefone = ? WHERE id = ?', [nome, telefone || '', id]);
       return NextResponse.json({ success: true, user: { id, nome, telefone } });
     }
-
-    // ================== ESQUECI A SENHA ==================
+// ================== ESQUECI A SENHA ==================
     if (action === 'forgot_password') {
       const { email } = data;
       if (!email) return NextResponse.json({ error: 'Preencha o e-mail' }, { status: 400 });
@@ -67,27 +66,127 @@ export async function POST(request: Request) {
       if (users.length === 0) return NextResponse.json({ error: 'E-mail não encontrado' }, { status: 404 });
 
       const token = crypto.randomBytes(32).toString('hex');
-      const expiracao = new Date(Date.now() + 3600000); // 1 hora de validade
 
-      await pool.execute('INSERT INTO recuperacao_senha (email, token, expiracao) VALUES (?, ?, ?)', [email, token, expiracao]);
+      await pool.execute(
+        'INSERT INTO recuperacao_senha (email, token, expiracao) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))', 
+        [email, token]
+      );
 
-      const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-senha?token=${token}`;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const resetLink = `${appUrl}/reset-senha?token=${token}`;
+      const logoUrl = `${appUrl}/imagens/Logofaixa.png`;
       
+      // Busca os 3 últimos produtos cadastrados para vitrine
+      const [ultimosProdutos]: any = await pool.execute(
+        'SELECT id, name, price, image FROM produtos ORDER BY id DESC LIMIT 3'
+      );
+
+      // Monta o HTML dos produtos dinamicamente
+      const produtosHTML = ultimosProdutos.map((p: any) => `
+        <td width="33%" align="center" style="padding: 10px; vertical-align: top;">
+            <a href="${appUrl}/produto/${p.id}" style="text-decoration: none; color: #333;">
+                <img src="${appUrl}${p.image}" alt="${p.name}" style="width: 100%; max-width: 120px; height: 120px; object-fit: cover; border-radius: 4px; background-color: #f4f4f4;">
+                <p style="font-size: 14px; margin: 10px 0 5px 0; font-weight: bold; color: #333333;">${p.name}</p>
+                <p style="font-size: 14px; color: #C17722; margin: 0 0 10px 0;">R$ ${Number(p.price).toFixed(2).replace('.', ',')}</p>
+            </a>
+        </td>
+      `).join('');
+
+      const emailHtml = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Recuperação de Senha - Chama Ocre</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333333;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 40px 0;">
+              <tr>
+                  <td align="center">
+                      <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                          
+                          <!-- Header / Logo Atualizado -->
+                          <tr>
+                              <td align="center" style="padding: 30px 20px 20px 20px;">
+                                  <img src="${logoUrl}" alt="Logo Chama Ocre" style="max-width: 180px; height: auto; display: block; border: none;" />
+                              </td>
+                          </tr>
+                          
+                          <!-- Banner -->
+                          <tr>
+                              <td align="center" style="background-color: #C17722; padding: 30px 20px;">
+                                  <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">Recuperação de Senha</h1>
+                              </td>
+                          </tr>
+                          
+                          <!-- Content -->
+                          <tr>
+                              <td style="padding: 40px 30px 20px 30px; line-height: 1.6;">
+                                  <p style="margin: 0 0 20px 0; font-size: 16px;">Olá <strong>${users[0].nome}</strong>,</p>
+                                  <p style="margin: 0 0 20px 0; font-size: 16px;">Você solicitou a recuperação de senha. Clique no botão abaixo para criar uma nova senha:</p>
+                                  
+                                  <!-- Button -->
+                                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                      <tr>
+                                          <td align="center" style="padding: 10px 0 30px 0;">
+                                              <a href="${resetLink}" style="background-color: #C17722; color: #ffffff; padding: 14px 28px; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 4px; display: inline-block;">Criar Nova Senha</a>
+                                          </td>
+                                      </tr>
+                                  </table>
+                                  
+                                  <p style="margin: 0 0 20px 0; font-size: 14px; color: #666666;">
+                                      Se o botão não funcionar, copie e cole o link abaixo no seu navegador:<br>
+                                      <a href="${resetLink}" style="color: #C17722; word-break: break-all;">${resetLink}</a>
+                                  </p>
+                                  
+                                  <p style="margin: 0; font-size: 14px; font-weight: bold; color: #d9534f;">Este link expira em 1 hora.</p>
+                              </td>
+                          </tr>
+
+                          <!-- Produtos Recomendados -->
+                          ${ultimosProdutos.length > 0 ? `
+                          <tr>
+                              <td style="padding: 0 30px 30px 30px;">
+                                  <hr style="border: 0; border-top: 1px solid #eeeeee; margin-bottom: 30px;">
+                                  <h2 style="font-size: 18px; color: #333333; text-align: center; margin-bottom: 20px;">Aproveite e confira nossas novidades:</h2>
+                                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                      <tr>
+                                          ${produtosHTML}
+                                      </tr>
+                                  </table>
+                              </td>
+                          </tr>
+                          ` : ''}
+                          
+                          <!-- Footer -->
+                          <tr>
+                              <td align="center" style="padding: 20px; background-color: #f9f9f9; border-top: 1px solid #eeeeee; font-size: 12px; color: #999999;">
+                                  <p style="margin: 0;">Caso não tenha solicitado essa alteração, por favor ignore este e-mail.</p>
+                                  <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} Chama Ocre. Todos os direitos reservados.</p>
+                              </td>
+                          </tr>
+                      </table>
+                  </td>
+              </tr>
+          </table>
+      </body>
+      </html>
+      `;
+
       try {
         await transporter.sendMail({
           from: '"Chama Ocre" <nao-responda@chamaocre.com>',
           to: email,
           subject: 'Recuperação de Senha - Chama Ocre',
-          html: `<p>Olá ${users[0].nome},</p><p>Você solicitou a recuperação de senha. Clique no link abaixo para criar uma nova senha:</p><p><a href="${resetLink}">${resetLink}</a></p><p>Este link expira em 1 hora.</p>`,
+          html: emailHtml,
         });
       } catch (e) {
-        console.error("Erro ao enviar email. Configure as credenciais no .env.", e);
-        // Ocultar erro de email em dev para não travar o fluxo se o SMTP não estiver configurado ainda
+        console.error("Erro ao enviar email:", e);
       }
 
       return NextResponse.json({ success: true, message: 'Se o e-mail existir, um link de recuperação foi enviado.' });
     }
-
     // ================== REDEFINIR SENHA ==================
     if (action === 'reset_password') {
       const { token, novaSenha } = data;
