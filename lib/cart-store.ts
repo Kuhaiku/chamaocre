@@ -8,7 +8,7 @@ export interface CartItem {
   image: string
   weight: string
   quantity: number
-  estoque: number // Nova propriedade obrigatória
+  estoque: number
 }
 
 interface CartStore {
@@ -28,36 +28,59 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      
       addItem: (item) => {
         const currentItems = get().items
         const existingItem = currentItems.find((i) => i.id === item.id)
 
+        // 1. Higienização rigorosa dos dados (Impede NaN)
+        const safeEstoque = Number(item.estoque) || 999; // Se falhar, assume 999 para não travar
+        const safeQuantity = Number(item.quantity) || 1;
+        
+        // Converte preço mesmo se vier como string com vírgula (ex: "49,90" -> 49.90)
+        let safePrice = item.price;
+        if (typeof safePrice === 'string') {
+          safePrice = Number((safePrice as string).replace(',', '.'));
+        }
+        safePrice = Number(safePrice) || 0;
+
         if (existingItem) {
-          // Trava: Soma a quantidade atual da sacola com a nova, mas limita ao estoque máximo
-          const newQuantity = Math.min(existingItem.quantity + (item.quantity || 1), item.estoque)
+          const currentQty = Number(existingItem.quantity) || 0;
+          const newQuantity = Math.min(currentQty + safeQuantity, safeEstoque);
+          
           set({
             items: currentItems.map((i) =>
-              i.id === item.id ? { ...i, quantity: newQuantity } : i
+              i.id === item.id 
+                ? { ...i, quantity: newQuantity, price: safePrice, estoque: safeEstoque } 
+                : i
             ),
             isOpen: true,
           })
         } else {
-          // Trava: Garante que a primeira adição não ultrapasse o estoque
-          const initialQuantity = Math.min(item.quantity || 1, item.estoque)
+          const initialQuantity = Math.min(safeQuantity, safeEstoque);
           set({
-            items: [...currentItems, { ...item, quantity: initialQuantity }],
+            items: [...currentItems, { 
+              ...item, 
+              quantity: initialQuantity, 
+              price: safePrice, 
+              estoque: safeEstoque 
+            }],
             isOpen: true,
           })
         }
       },
+      
       removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
+      
       updateQuantity: (id, quantity) => {
         const currentItems = get().items
         const itemToUpdate = currentItems.find((i) => i.id === id)
         if (!itemToUpdate) return
 
-        // Trava: Impede de aumentar no botão de + além do estoque
-        const validQuantity = Math.min(Math.max(1, quantity), itemToUpdate.estoque)
+        const safeEstoque = Number(itemToUpdate.estoque) || 999;
+        const safeRequestedQty = Number(quantity) || 1;
+        
+        const validQuantity = Math.min(Math.max(1, safeRequestedQty), safeEstoque)
         
         set({
           items: currentItems.map((i) =>
@@ -65,10 +88,26 @@ export const useCartStore = create<CartStore>()(
           ),
         })
       },
+      
       clearCart: () => set({ items: [] }),
       setIsOpen: (isOpen) => set({ isOpen }),
-      getTotalPrice: () => get().items.reduce((total, item) => total + item.price * item.quantity, 0),
-      getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
+      
+      getTotalPrice: () => {
+        const total = get().items.reduce((total, item) => {
+          const price = Number(item.price) || 0;
+          const qty = Number(item.quantity) || 0;
+          return total + (price * qty);
+        }, 0);
+        return Number.isNaN(total) ? 0 : total;
+      },
+      
+      getTotalItems: () => {
+        const total = get().items.reduce((total, item) => {
+          const qty = Number(item.quantity) || 0;
+          return total + qty;
+        }, 0);
+        return Number.isNaN(total) ? 0 : total;
+      },
     }),
     {
       name: 'chama-ocre-cart',
