@@ -7,7 +7,7 @@ import { useCartStore } from '@/lib/cart-store'
 import { useAuthStore } from '@/lib/auth-store'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { Loader2, CreditCard, ArrowLeft, Truck, CheckCircle2 } from 'lucide-react'
+import { Loader2, CreditCard, ArrowLeft, Truck } from 'lucide-react'
 import Link from 'next/link'
 
 type OpcaoFrete = {
@@ -22,6 +22,10 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { items, getTotalPrice, getTotalItems } = useCartStore()
   const { user } = useAuthStore()
+  
+  // ==========================================
+  // TODOS OS HOOKS DEVEM FICAR AQUI NO TOPO
+  // ==========================================
   const [isMounted, setIsMounted] = useState(false)
 
   // Endereço
@@ -34,11 +38,17 @@ export default function CheckoutPage() {
   const [calculandoFrete, setCalculandoFrete] = useState(false)
   const [freteSelecionado, setFreteSelecionado] = useState<OpcaoFrete | null>(null)
 
+  // Pagamento (CORRIGIDO: Movido para cima do return)
+  const [processandoPagamento, setProcessandoPagamento] = useState(false)
+
   useEffect(() => {
     setIsMounted(true)
     if (!user || items.length === 0) router.push('/loja')
   }, [user, items, router])
 
+  // ==========================================
+  // O RETURN CONDICIONAL VEM DEPOIS DOS HOOKS
+  // ==========================================
   if (!isMounted || !user || items.length === 0) return null
 
   const calcularFrete = async (cepDestino: string) => {
@@ -56,7 +66,7 @@ export default function CheckoutPage() {
       
       if (res.ok && data.fretes.length > 0) {
         setOpcoesFrete(data.fretes);
-        setFreteSelecionado(data.fretes[0]); // Seleciona o mais barato por padrão
+        setFreteSelecionado(data.fretes[0]);
       }
     } catch (error) {
       console.error("Erro ao calcular frete");
@@ -78,8 +88,6 @@ export default function CheckoutPage() {
         if (!data.erro) {
           setEndereco(prev => ({ ...prev, rua: data.logradouro, bairro: data.bairro, cidade: data.localidade, estado: data.uf }))
           document.getElementById('numero')?.focus()
-          
-          // Assim que achar o CEP, dispara o cálculo de frete
           calcularFrete(cepLimpo)
         }
       } catch (error) {
@@ -93,7 +101,6 @@ export default function CheckoutPage() {
   const handleEnderecoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndereco({ ...endereco, [e.target.name]: e.target.value })
   }
-  const [processandoPagamento, setProcessandoPagamento] = useState(false);
 
   const handleIrParaPagamento = async () => {
     setProcessandoPagamento(true);
@@ -116,7 +123,6 @@ export default function CheckoutPage() {
       const data = await res.json();
       
       if (res.ok && data.success) {
-        // Redireciona o cliente para a tela do Mercado Pago
         window.location.href = data.payment_url;
       } else {
         alert(data.error || 'Erro ao processar pagamento.');
@@ -198,7 +204,6 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* SEÇÃO DE FRETE DINÂMICO */}
             <section className="bg-white p-6 md:p-8 border border-stone-200 rounded-sm shadow-sm">
               <h2 className="text-sm font-bold tracking-widest uppercase text-stone-900 mb-6 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-[#C87A2C] text-white flex items-center justify-center text-xs">3</span>
@@ -288,7 +293,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-             <button 
+              <button 
                 onClick={handleIrParaPagamento}
                 disabled={!freteSelecionado || !endereco.numero || processandoPagamento}
                 className="w-full bg-[#C87A2C] hover:bg-[#E59400] disabled:bg-stone-300 disabled:cursor-not-allowed text-white py-4 rounded-sm tracking-widest uppercase text-sm font-bold transition-all shadow-md outline-none flex items-center justify-center gap-2"
