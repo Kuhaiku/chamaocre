@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, MapPin, Edit2, Check } from 'lucide-react';
+import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, Edit2, Check, Copy, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
+
+const statusMap: Record<string, { label: string, color: string }> = {
+  'aguardando_pagamento': { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  'pago': { label: 'Pagamento Aprovado', color: 'bg-green-100 text-green-700 border-green-200' },
+  'enviado': { label: 'Enviado', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  'cancelado': { label: 'Cancelado', color: 'bg-red-100 text-red-700 border-red-200' }
+};
 
 export function AuthDrawer() {
   const { isOpen, setIsOpen, view, setView, user, setUser, logout } = useAuthStore();
@@ -15,6 +22,11 @@ export function AuthDrawer() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Estados dos Pedidos
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [copiadoId, setCopiadoId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -33,6 +45,35 @@ export function AuthDrawer() {
       setEditData({ nome: user.nome, telefone: user.telefone || '' });
     }
   }, [isOpen, user, view, setView]);
+
+  // Busca os pedidos quando o cliente abre a tela de "Meus Pedidos"
+  useEffect(() => {
+    if (loggedView === 'orders' && user) {
+      fetchOrders();
+    }
+  }, [loggedView, user]);
+
+  const fetchOrders = async () => {
+    if (!user) return;
+    setLoadingOrders(true);
+    try {
+      const res = await fetch(`/api/pedidos?usuario_id=${user.id}`);
+      const data = await res.json();
+      if (res.ok) {
+        setOrders(data.pedidos || []);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar pedidos");
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const handleCopiarRastreio = (codigo: string, pedidoId: string) => {
+    navigator.clipboard.writeText(codigo);
+    setCopiadoId(pedidoId);
+    setTimeout(() => setCopiadoId(null), 2000);
+  };
 
   if (!isMounted) return null;
 
@@ -143,6 +184,7 @@ export function AuthDrawer() {
                 </button>
               </div>
             </div>
+
           ) : loggedView === 'edit_profile' ? (
             <div className="flex flex-col h-full animate-fade-in pt-12">
               <div className="flex items-center gap-3 p-6 border-b border-stone-100">
@@ -171,25 +213,89 @@ export function AuthDrawer() {
                 </button>
               </form>
             </div>
+
           ) : (
             <div className="flex flex-col h-full animate-fade-in pt-12">
-              <div className="flex items-center gap-3 p-6 border-b border-stone-100">
+              <div className="flex items-center gap-3 p-6 border-b border-stone-100 bg-white sticky top-0 z-10">
                 <button onClick={() => setLoggedView('menu')} className="p-1 text-stone-400 hover:text-[#C87A2C] transition-colors outline-none"><ArrowLeft className="w-6 h-6" /></button>
                 <h3 className="font-heading text-xl text-stone-900">Meus Pedidos</h3>
               </div>
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                <div className="w-20 h-20 bg-stone-50 border border-stone-100 rounded-full flex items-center justify-center mb-6"><Package className="w-10 h-10 text-stone-300" /></div>
-                <h3 className="text-lg font-heading text-stone-900 mb-2">Nenhum pedido ainda</h3>
-                <p className="text-sm text-stone-500 max-w-[250px]">Quando finalizar sua primeira compra, os detalhes aparecerão aqui.</p>
+              
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-stone-50">
+                {loadingOrders ? (
+                  <div className="flex flex-col items-center justify-center h-full text-stone-400 gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#C87A2C]" />
+                    <p className="text-sm">Buscando seus pedidos...</p>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center text-center h-full">
+                    <div className="w-20 h-20 bg-white border border-stone-200 rounded-full flex items-center justify-center mb-6"><Package className="w-10 h-10 text-stone-300" /></div>
+                    <h3 className="text-lg font-heading text-stone-900 mb-2">Nenhum pedido ainda</h3>
+                    <p className="text-sm text-stone-500 max-w-[250px]">Quando finalizar sua primeira compra, os detalhes aparecerão aqui.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map((pedido) => {
+                      const dataPedido = new Date(pedido.criado_em).toLocaleDateString('pt-BR');
+                      const statusInfo = statusMap[pedido.status] || { label: pedido.status, color: 'bg-stone-100 text-stone-600 border-stone-200' };
+
+                      return (
+                        <div key={pedido.id} className="bg-white border border-stone-200 rounded-sm shadow-sm overflow-hidden">
+                          <div className="p-4 border-b border-stone-100 flex justify-between items-start bg-stone-50/50">
+                            <div>
+                              <span className="text-[10px] text-stone-500 uppercase tracking-widest block mb-1">Pedido #{pedido.id}</span>
+                              <span className="text-sm font-medium text-stone-900">{dataPedido}</span>
+                            </div>
+                            <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded-sm border ${statusInfo.color}`}>
+                              {statusInfo.label}
+                            </span>
+                          </div>
+                          
+                          <div className="p-4 space-y-2">
+                            {pedido.itens.map((item: any) => (
+                              <div key={item.id} className="flex justify-between items-center text-sm">
+                                <span className="text-stone-600 flex items-center gap-2">
+                                  <span className="w-5 h-5 bg-stone-100 text-stone-500 flex items-center justify-center rounded-sm text-xs">{item.quantidade}x</span>
+                                  <span className="line-clamp-1">{item.nome_produto}</span>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="px-4 py-3 bg-stone-50 border-t border-stone-100 flex justify-between items-center">
+                            <span className="text-xs text-stone-500 uppercase tracking-widest">Total</span>
+                            <span className="font-heading text-[#C87A2C]">R$ {Number(pedido.total).toFixed(2).replace('.', ',')}</span>
+                          </div>
+
+                          {/* Área do Código de Rastreio */}
+                          {pedido.codigo_rastreio && (
+                            <div className="px-4 py-3 bg-[#C87A2C]/5 border-t border-[#C87A2C]/20 flex justify-between items-center">
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-[#C87A2C] uppercase tracking-widest font-bold mb-0.5">Rastreio</span>
+                                <span className="text-sm font-medium text-stone-900">{pedido.codigo_rastreio}</span>
+                              </div>
+                              <button 
+                                onClick={() => handleCopiarRastreio(pedido.codigo_rastreio, pedido.id)}
+                                className="p-2 text-[#C87A2C] hover:bg-[#C87A2C]/10 rounded-sm transition-colors outline-none"
+                                title="Copiar código"
+                              >
+                                {copiadoId === pedido.id ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )
         ) : (
           /* ========================================== */
-          /* VISITANTE */
+          /* VISITANTE (Mantido inalterado) */
           /* ========================================== */
           <div className="flex flex-col h-full">
-            
             {view === 'forgot_password' ? (
               <div className="relative p-6 border-b border-stone-100 flex items-center gap-3 pt-12">
                  <button onClick={() => { setView('login'); setErrorMsg(''); setSuccessMsg(''); }} className="p-1 text-stone-400 hover:text-[#C87A2C] transition-colors outline-none"><ArrowLeft className="w-5 h-5" /></button>
@@ -205,7 +311,6 @@ export function AuthDrawer() {
             )}
 
             <div className="flex-1 overflow-y-auto p-6">
-              
               {view === 'forgot_password' ? (
                  <form onSubmit={(e) => handleAction(e, 'forgot_password')} className="space-y-6 animate-fade-in">
                     <p className="text-sm text-stone-500 text-center mb-6">Digite seu e-mail e enviaremos um link para você redefinir sua senha.</p>
@@ -291,7 +396,6 @@ export function AuthDrawer() {
             </div>
           </div>
         )}
-
       </div>
     </>
   );
