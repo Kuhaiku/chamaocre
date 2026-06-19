@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
     // 2. Chamar a API do Melhor Envio (URL de Sandbox para testes)
     // Quando for lançar a loja, troque "sandbox.melhorenvio" por "www.melhorenvio"
-    const response = await fetch('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate', {
+    const response = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',

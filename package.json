@@ -15,6 +15,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
+    "mercadopago": "^3.1.0",
     "mysql2": "^3.22.5",
     "next": "16.2.6",
     "nodemailer": "^9.0.1",

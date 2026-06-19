@@ -93,6 +93,41 @@ export default function CheckoutPage() {
   const handleEnderecoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndereco({ ...endereco, [e.target.name]: e.target.value })
   }
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
+
+  const handleIrParaPagamento = async () => {
+    setProcessandoPagamento(true);
+    
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuario_id: user.id,
+          items,
+          subtotal: getTotalPrice(),
+          frete: freteSelecionado ? freteSelecionado.preco : 0,
+          total: getTotalPrice() + (freteSelecionado ? freteSelecionado.preco : 0),
+          endereco: { ...endereco, cep },
+          freteSelecionado
+        })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        // Redireciona o cliente para a tela do Mercado Pago
+        window.location.href = data.payment_url;
+      } else {
+        alert(data.error || 'Erro ao processar pagamento.');
+        setProcessandoPagamento(false);
+      }
+    } catch (error) {
+      console.error("Erro no checkout", error);
+      alert('Erro de conexão. Tente novamente.');
+      setProcessandoPagamento(false);
+    }
+  }
 
   const subtotal = getTotalPrice()
   const valorFrete = freteSelecionado ? freteSelecionado.preco : 0
@@ -253,12 +288,16 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <button 
-                disabled={!freteSelecionado || !endereco.numero}
+             <button 
+                onClick={handleIrParaPagamento}
+                disabled={!freteSelecionado || !endereco.numero || processandoPagamento}
                 className="w-full bg-[#C87A2C] hover:bg-[#E59400] disabled:bg-stone-300 disabled:cursor-not-allowed text-white py-4 rounded-sm tracking-widest uppercase text-sm font-bold transition-all shadow-md outline-none flex items-center justify-center gap-2"
               >
-                <CreditCard size={18} />
-                Ir para o Pagamento
+                {processandoPagamento ? (
+                  <><Loader2 size={18} className="animate-spin" /> Processando...</>
+                ) : (
+                  <><CreditCard size={18} /> Ir para o Pagamento</>
+                )}
               </button>
             </div>
           </aside>
