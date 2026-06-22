@@ -63,7 +63,7 @@ export function Footer() {
               </a>
 
               {/* WhatsApp */}
-              <a
+              {/* <a
                 href="https://wa.me/5522992082292"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -71,7 +71,7 @@ export function Footer() {
                 className="w-10 h-10 rounded-sm border border-[#C87A2C]/30 bg-[#C87A2C]/5 flex items-center justify-center text-muted-foreground hover:text-[#C87A2C] hover:border-[#C87A2C]/70 hover:bg-[#C87A2C]/10 transition-all duration-300"
               >
                 <MessageCircle size={16} />
-              </a>
+              </a> */}
             </div>
           </div>
 
