@@ -17,6 +17,7 @@ interface Product {
   tag: string;
   tagColor: string;
   burnTime: string;
+  estoque: number;
   peso_comercial: string;
 }
 
@@ -78,6 +79,7 @@ export function ProductsSection() {
       price: Number(product.price),
       image: product.image,
       peso_comercial: product.peso_comercial,
+      estoque: number
     })
   }
 
@@ -164,10 +166,12 @@ export function ProductsSection() {
                       <div className="text-sm text-foreground font-medium">{product.burnTime}</div>
                     </div>
                     <div className="w-px bg-border" />
-                    <div className="text-center">
-                      <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Peso</div>
-                      <div className="text-sm text-foreground font-medium">{product.peso_comercial}</div>
-                    </div>
+                    {product.peso_comercial && (
+  <div className="text-center">
+    <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Peso</div>
+    <div className="text-sm text-foreground font-medium">{product.peso_comercial}</div>
+  </div>
+)}
                   </div>
 
                   {/* Footer - Botões Lado a Lado */}
