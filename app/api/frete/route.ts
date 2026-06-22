@@ -1,78 +1,84 @@
 import { NextResponse } from 'next/server';
+import pool from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
     const { cep_destino, items } = await request.json();
 
     if (!cep_destino || !items || items.length === 0) {
-      return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 });
+      return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
     }
 
-    // 1. Preparar os produtos para o formato do Melhor Envio
-    const products = items.map((item: any) => {
-      // Tenta converter "190g" em 0.19 (kg). Se falhar, usa 0.3kg como padrão.
-      let pesoKg = 0.3;
-      if (item.weight) {
-        const pesoLimpo = item.weight.toString().replace(/[^0-9,.]/g, '').replace(',', '.');
-        const pesoNum = parseFloat(pesoLimpo);
-        if (!isNaN(pesoNum)) {
-          pesoKg = item.weight.toLowerCase().includes('kg') ? pesoNum : pesoNum / 1000;
-        }
+    // 1. Busca no banco de dados quais transportadoras você ativou no Admin
+    let transportadorasPermitidas: string[] = [];
+    try {
+      const [configRows]: any = await pool.execute('SELECT transportadoras_ativas FROM configuracoes LIMIT 1');
+      if (configRows.length > 0) {
+        transportadorasPermitidas = typeof configRows[0].transportadoras_ativas === 'string'
+          ? JSON.parse(configRows[0].transportadoras_ativas)
+          : configRows[0].transportadoras_ativas;
       }
+    } catch (e) {
+      console.error("Erro ao ler configurações do banco, assumindo array vazio.");
+    }
 
-      return {
-        id: item.id.toString(),
-        width: 15,  // Largura padrão da caixa da vela em cm
-        height: 15, // Altura padrão
-        length: 15, // Comprimento padrão
-        weight: pesoKg,
-        insurance_value: item.price,
-        quantity: item.quantity
-      };
-    });
+    // 2. Prepara os itens para o Melhor Envio (usa peso e dimensões padrão se não houver)
+    const products = items.map((item: any) => ({
+      id: item.id.toString(),
+      width: 15, 
+      height: 15,
+      length: 15,
+      weight: Number(item.weight) || 0.5,
+      insurance_value: Number(item.price),
+      quantity: Number(item.quantity),
+    }));
 
-    const payload = {
-      from: { postal_code: process.env.CEP_ORIGEM || '00000000' },
-      to: { postal_code: cep_destino.replace(/\D/g, '') },
-      products: products
-    };
-
-    // 2. Chamar a API do Melhor Envio (URL de Sandbox para testes)
-    // Quando for lançar a loja, troque "sandbox.melhorenvio" por "www.melhorenvio"
+    // 3. Faz a cotação real no Melhor Envio (Servidor de Produção)
     const response = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-        'User-Agent': 'Chama Ocre (suporte@chamaocre.com)' // O Melhor Envio exige um e-mail de contato aqui
+        'User-Agent': 'ChamaOcre (atendimento@chamaocre.com)' // Boa prática exigida por eles
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        from: { postal_code: process.env.CEP_ORIGEM || '28970000' },
+        to: { postal_code: cep_destino.replace(/\D/g, '') },
+        products: products,
+      })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       console.error("Erro Melhor Envio:", data);
-      return NextResponse.json({ error: 'Erro ao cotar o frete na transportadora.' }, { status: 400 });
+      return NextResponse.json({ error: 'Erro ao calcular frete' }, { status: 500 });
     }
 
-    // 3. Filtrar transportadoras que retornaram erro e ordenar da mais barata para a mais cara
-    const fretesValidos = data
-      .filter((f: any) => !f.error && f.price)
-      .map((f: any) => ({
-        id: f.id,
-        nome: f.name,
-        empresa: f.company.name,
-        preco: parseFloat(f.price),
-        prazo: f.delivery_time
-      }))
-      .sort((a: any, b: any) => a.preco - b.preco);
+    // 4. A Mágica do Filtro: Remove opções com erro e cruza com as suas escolhas do Admin
+    const fretesFiltrados = data
+      .filter((frete: any) => !frete.error) 
+      .map((frete: any) => {
+        // O Melhor Envio devolve separado, ex: company: "Correios", name: "PAC"
+        const nomeCompleto = `${frete.company.name} ${frete.name}`;
+        return {
+          id: frete.id,
+          nome: frete.name,
+          empresa: frete.company.name,
+          nomeCompleto: nomeCompleto,
+          preco: Number(frete.custom_price || frete.price),
+          prazo: frete.custom_delivery_time || frete.delivery_time,
+        };
+      })
+      // Só deixa passar as transportadoras que estão marcadas com "Check" no seu painel
+      .filter((frete: any) => transportadorasPermitidas.includes(frete.nomeCompleto))
+      .sort((a: any, b: any) => a.preco - b.preco); // Ordena da mais barata para a mais cara
 
-    return NextResponse.json({ fretes: fretesValidos });
+    return NextResponse.json({ fretes: fretesFiltrados });
 
   } catch (error) {
     console.error('Erro na rota de frete:', error);
-    return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 });
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
   }
 }

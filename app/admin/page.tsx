@@ -1,373 +1,331 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { 
-  LayoutDashboard, PlusCircle, Package, UploadCloud, 
-  CheckCircle2, Loader2, Trash2, Edit, ArrowLeft, ArrowRight 
-} from "lucide-react";
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Navbar } from '@/components/navbar'
+import { useAuthStore } from '@/lib/auth-store'
+import { Loader2, Package, Truck, Save, MapPin, Settings, FileText, CheckCircle2 } from 'lucide-react'
 
-type ImagemGaleria = {
-  id: string;
-  url: string;
-  file?: File;
-};
+const EMAIL_ADMIN = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("produtos");
-  const [produtos, setProdutos] = useState<any[]>([]);
-  const [isLoadingProdutos, setIsLoadingProdutos] = useState(false);
-  const [produtoEditando, setProdutoEditando] = useState<any>(null);
+const TODAS_TRANSPORTADORAS = [
+  "Correios PAC",
+  "Correios SEDEX",
+  "Correios Mini Envios",
+  "Jadlog Package",
+  "Jadlog .Com"
+];
+
+export default function AdminPage() {
+  const router = useRouter()
+  const { user } = useAuthStore()
   
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-  const [galeria, setGaleria] = useState<ImagemGaleria[]>([]);
+  const [isMounted, setIsMounted] = useState(false)
+  const [abaAtiva, setAbaAtiva] = useState<'pedidos' | 'configuracoes'>('pedidos')
+  
+  // Estados de Pedidos
+  const [pedidos, setPedidos] = useState<any[]>([])
+  const [loadingPedidos, setLoadingPedidos] = useState(true)
+  const [filtro, setFiltro] = useState('todos')
+  const [salvandoId, setSalvandoId] = useState<number | null>(null)
 
-  const fetchProdutos = async () => {
-    setIsLoadingProdutos(true);
-    try {
-      const res = await fetch('/api/produtos');
-      if (res.ok) {
-        const data = await res.json();
-        setProdutos(data.produtos);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
-    } finally {
-      setIsLoadingProdutos(false);
-    }
-  };
+  // Estados de Configuração
+  const [transportadorasAtivas, setTransportadorasAtivas] = useState<string[]>([])
+  const [loadingConfig, setLoadingConfig] = useState(true)
+  const [salvandoConfig, setSalvandoConfig] = useState(false)
 
   useEffect(() => {
-    if (activeTab === "produtos") fetchProdutos();
-  }, [activeTab]);
+    setIsMounted(true)
+    if (user && user.email !== EMAIL_ADMIN) {
+      router.push('/')
+    } else if (user && user.email === EMAIL_ADMIN) {
+      fetchPedidos()
+      fetchConfiguracoes()
+    }
+  }, [user, router])
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Tem certeza que deseja excluir este produto permanentemente?")) return;
+  const fetchPedidos = async () => {
+    setLoadingPedidos(true)
     try {
-      const res = await fetch(`/api/produtos/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setProdutos(produtos.filter(p => p.id !== id));
-      } else {
-        alert("Erro ao excluir o produto.");
-      }
+      const res = await fetch('/api/admin/pedidos')
+      const data = await res.json()
+      if (res.ok) setPedidos(data.pedidos || [])
     } catch (error) {
-      console.error(error);
-      alert("Erro de conexão.");
-    }
-  };
-
-  const adicionarImagens = (files: FileList | File[]) => {
-    const novasImagens = Array.from(files).map((file) => ({
-      id: Math.random().toString(36).substring(7),
-      url: URL.createObjectURL(file),
-      file: file
-    }));
-    setGaleria(prev => [...prev, ...novasImagens]);
-  };
-
-  const handleImageDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsHovering(false);
-    if (e.dataTransfer.files?.length > 0) adicionarImagens(e.dataTransfer.files);
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) adicionarImagens(e.target.files);
-  };
-
-  const removerImagem = (id: string) => {
-    setGaleria(prev => prev.filter(img => img.id !== id));
-  };
-
-  const moverImagem = (index: number, direcao: 'esq' | 'dir') => {
-    const novaGaleria = [...galeria];
-    if (direcao === 'esq' && index > 0) {
-      [novaGaleria[index - 1], novaGaleria[index]] = [novaGaleria[index], novaGaleria[index - 1]];
-    } else if (direcao === 'dir' && index < novaGaleria.length - 1) {
-      [novaGaleria[index + 1], novaGaleria[index]] = [novaGaleria[index], novaGaleria[index + 1]];
-    }
-    setGaleria(novaGaleria);
-  };
-
-const handleEditClick = async (produto: any) => {
-    setProdutoEditando(produto);
-    setGaleria([]); 
-    setActiveTab("form-produto");
-
-    try {
-      const res = await fetch(`/api/produtos/${produto.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        const prodCompleto = data.produto;
-        setProdutoEditando(prodCompleto);
-        
-        const imagensCarregadas = [];
-        
-        // 1. Carrega a Capa
-        if (prodCompleto.image) {
-          imagensCarregadas.push({
-            id: 'capa-' + Math.random().toString(36).substr(2, 9),
-            url: prodCompleto.image
-          });
-        }
-        
-        // 2. Carrega a Galeria
-        if (prodCompleto.galeria && prodCompleto.galeria.length > 0) {
-          prodCompleto.galeria.forEach((url: string) => {
-            imagensCarregadas.push({
-              id: 'gal-' + Math.random().toString(36).substr(2, 9),
-              url: url
-            });
-          });
-        }
-        
-        setGaleria(imagensCarregadas);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar imagens do produto:", error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!produtoEditando && galeria.length === 0) {
-      return alert('Adicione pelo menos uma imagem para a galeria do novo produto.');
-    }
-
-    setIsLoading(true);
-    const formData = new FormData(e.currentTarget);
-    
-    galeria.forEach((img, index) => {
-      if (img.file) {
-        formData.append(`imagem_${index}`, img.file);
-      }
-    });
-    formData.append('total_imagens', galeria.length.toString());
-
-    const isEditing = !!produtoEditando;
-    const url = isEditing ? `/api/produtos/${produtoEditando.id}` : '/api/produtos';
-    const method = isEditing ? 'PUT' : 'POST';
-
-    try {
-      const res = await fetch(url, { method, body: formData });
-      if (res.ok) {
-        setIsSuccess(true);
-        setTimeout(() => {
-          setIsSuccess(false);
-          setGaleria([]);
-          (e.target as HTMLFormElement).reset();
-          setActiveTab("produtos");
-        }, 1500);
-      } else {
-        const errorData = await res.json();
-        alert(`Erro: ${errorData.error}`);
-      }
-    } catch (error) {
-      alert('Erro de conexão com o servidor.');
+      console.error("Erro ao buscar pedidos")
     } finally {
-      setIsLoading(false);
+      setLoadingPedidos(false)
     }
-  };
+  }
+
+  const fetchConfiguracoes = async () => {
+    try {
+      const res = await fetch('/api/admin/configuracoes')
+      const data = await res.json()
+      if (res.ok) setTransportadorasAtivas(data.transportadoras || [])
+    } catch (error) {
+      console.error("Erro ao buscar configurações")
+    } finally {
+      setLoadingConfig(false)
+    }
+  }
+
+  const handleToggleTransportadora = (nome: string) => {
+    setTransportadorasAtivas(prev => 
+      prev.includes(nome) ? prev.filter(t => t !== nome) : [...prev, nome]
+    )
+  }
+
+  const handleSalvarConfiguracoes = async () => {
+    setSalvandoConfig(true)
+    try {
+      const res = await fetch('/api/admin/configuracoes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transportadoras: transportadorasAtivas })
+      })
+      if (res.ok) alert('Configurações salvas com sucesso!')
+    } catch (error) {
+      alert('Erro ao salvar configurações.')
+    } finally {
+      setSalvandoConfig(false)
+    }
+  }
+
+  const handleUpdatePedido = async (id: number, novoStatus: string, novoRastreio: string) => {
+    setSalvandoId(id)
+    try {
+      const res = await fetch('/api/admin/pedidos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: novoStatus, codigo_rastreio: novoRastreio })
+      })
+      if (res.ok) {
+        setPedidos(pedidos.map(p => p.id === id ? { ...p, status: novoStatus, codigo_rastreio: novoRastreio } : p))
+        alert('Pedido atualizado com sucesso!')
+      } else {
+        alert('Erro ao atualizar o pedido.')
+      }
+    } catch (error) {
+      alert('Erro de conexão.')
+    } finally {
+      setSalvandoId(null)
+    }
+  }
+
+  if (!isMounted || !user || user.email !== EMAIL_ADMIN) {
+    return <div className="min-h-screen flex items-center justify-center bg-stone-50"><Loader2 className="w-8 h-8 animate-spin text-[#C87A2C]" /></div>
+  }
+
+  const pedidosFiltrados = filtro === 'todos' ? pedidos : pedidos.filter(p => p.status === filtro)
 
   return (
-    <div className="min-h-screen bg-stone-100 flex font-sans">
-      <aside className="w-64 bg-white border-r border-stone-200 flex flex-col">
-        <div className="p-6 border-b border-stone-100">
-          <h2 className="text-xl font-bold text-stone-800">Painel Admin</h2>
-          <p className="text-xs text-stone-500 mt-1">Chama Ocre</p>
-        </div>
-        <nav className="flex-1 p-4 space-y-1">
-          <button onClick={() => setActiveTab("produtos")} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "produtos" ? "bg-amber-50 text-amber-700" : "text-stone-600 hover:bg-stone-50"}`}>
-            <Package className="w-5 h-5" /> Meus Produtos
-          </button>
-          <button onClick={() => { setProdutoEditando(null); setGaleria([]); setActiveTab("form-produto"); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === "form-produto" && !produtoEditando ? "bg-amber-50 text-amber-700" : "text-stone-600 hover:bg-stone-50"}`}>
-            <PlusCircle className="w-5 h-5" /> Novo Produto
-          </button>
-        </nav>
-      </aside>
+    <div className="min-h-screen flex flex-col bg-stone-100 font-sans">
+      <Navbar forceSolid />
 
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-grow pt-28 pb-20 max-w-7xl mx-auto w-full px-4 sm:px-6 flex flex-col lg:flex-row gap-8">
         
-        {activeTab === "produtos" && (
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-             <div className="p-6 border-b border-stone-100 flex justify-between items-center">
-              <h1 className="text-2xl font-semibold text-stone-800">Meus Produtos</h1>
-              <button onClick={() => { setProdutoEditando(null); setGaleria([]); setActiveTab('form-produto'); }} className="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-800 flex items-center gap-2">
-                <PlusCircle className="w-4 h-4" /> Cadastrar
-              </button>
-            </div>
-            
-            <div className="p-0 overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-stone-50 border-b border-stone-200 text-sm text-stone-500">
-                    <th className="p-4 font-medium">Produto</th>
-                    <th className="p-4 font-medium">Estoque</th>
-                    <th className="p-4 font-medium">Preço</th>
-                    <th className="p-4 font-medium text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {isLoadingProdutos ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-stone-500"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />Carregando...</td></tr>
-                  ) : produtos.length === 0 ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-stone-500">Nenhum produto cadastrado.</td></tr>
-                  ) : (
-                    produtos.map((prod) => (
-                      <tr key={prod.id} className="hover:bg-stone-50/50">
-                        <td className="p-4 flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-stone-200 bg-stone-100">
-                            <img src={prod.image} alt={prod.name} className="w-full h-full object-cover" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-stone-800">{prod.name}</p>
-                            <p className="text-xs text-stone-500">{prod.line}</p>
-                          </div>
-                        </td>
-                        <td className="p-4 text-stone-600 text-sm">{prod.estoque} un.</td>
-                        <td className="p-4 text-stone-600 font-medium">R$ {Number(prod.price).toFixed(2).replace('.', ',')}</td>
-                        <td className="p-4 text-right space-x-2">
-                          <button onClick={() => handleEditClick(prod)} className="p-2 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(prod.id)} className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+        {/* Menu Lateral */}
+        <aside className="w-full lg:w-64 flex-shrink-0">
+          <div className="bg-white rounded-sm border border-stone-200 shadow-sm p-4 sticky top-28 space-y-2">
+            <button 
+              onClick={() => setAbaAtiva('pedidos')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-sm text-sm font-bold tracking-widest uppercase transition-colors outline-none ${abaAtiva === 'pedidos' ? 'bg-[#C87A2C] text-white' : 'text-stone-500 hover:bg-stone-50'}`}
+            >
+              <Package size={18} /> Vendas
+            </button>
+            <button 
+              onClick={() => setAbaAtiva('configuracoes')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-sm text-sm font-bold tracking-widest uppercase transition-colors outline-none ${abaAtiva === 'configuracoes' ? 'bg-[#C87A2C] text-white' : 'text-stone-500 hover:bg-stone-50'}`}
+            >
+              <Settings size={18} /> Configurações
+            </button>
           </div>
-        )}
+        </aside>
 
-        {activeTab === "form-produto" && (
-          <div className="max-w-4xl bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-              <h1 className="text-2xl font-semibold text-stone-800">
-                {produtoEditando ? `Editar: ${produtoEditando.name}` : 'Cadastrar Novo Produto'}
-              </h1>
-              {produtoEditando && (
-                <button onClick={() => setActiveTab("produtos")} className="text-sm text-stone-500 hover:text-stone-800">Voltar</button>
+        {/* Área Principal */}
+        <div className="flex-1">
+          {abaAtiva === 'pedidos' ? (
+            <>
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div>
+                  <h1 className="text-3xl font-heading text-stone-900">Painel de Vendas</h1>
+                  <p className="text-stone-500 text-sm mt-1">Gerencie os pedidos e atualize status.</p>
+                </div>
+                <div className="flex bg-white rounded-sm shadow-sm border border-stone-200 p-1 overflow-x-auto">
+                  {['todos', 'aguardando_pagamento', 'pago', 'enviado'].map((status) => (
+                    <button key={status} onClick={() => setFiltro(status)} className={`whitespace-nowrap px-4 py-2 text-[10px] font-bold tracking-widest uppercase transition-colors rounded-sm ${filtro === status ? 'bg-[#C87A2C] text-white' : 'text-stone-500 hover:text-stone-900'}`}>
+                      {status === 'todos' ? 'Todos' : status.replace('_', ' ')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {loadingPedidos ? (
+                <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#C87A2C]" /></div>
+              ) : pedidosFiltrados.length === 0 ? (
+                <div className="bg-white p-10 text-center rounded-sm border border-stone-200 shadow-sm">
+                  <Package className="w-16 h-16 text-stone-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-heading text-stone-900">Nenhum pedido encontrado.</h3>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {pedidosFiltrados.map(pedido => (
+                    <PedidoCard key={pedido.id} pedido={pedido} onSave={handleUpdatePedido} salvandoId={salvandoId} />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-white p-8 rounded-sm border border-stone-200 shadow-sm animate-fade-in">
+              <h2 className="text-2xl font-heading text-stone-900 mb-2">Transportadoras</h2>
+              <p className="text-stone-500 text-sm mb-8">Selecione quais opções de frete aparecerão no checkout para os clientes.</p>
+              
+              {loadingConfig ? (
+                 <Loader2 className="w-6 h-6 animate-spin text-[#C87A2C]" />
+              ) : (
+                <div className="space-y-6 max-w-md">
+                  <div className="space-y-3">
+                    {TODAS_TRANSPORTADORAS.map((nome) => {
+                      const ativo = transportadorasAtivas.includes(nome);
+                      return (
+                        <label key={nome} className={`flex items-center gap-4 p-4 border rounded-sm cursor-pointer transition-colors ${ativo ? 'border-[#C87A2C] bg-[#C87A2C]/5' : 'border-stone-200 hover:border-stone-300 bg-stone-50'}`}>
+                          <div className={`w-5 h-5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-colors ${ativo ? 'bg-[#C87A2C] border-[#C87A2C]' : 'border-stone-300 bg-white'}`}>
+                            {ativo && <CheckCircle2 size={14} className="text-white" />}
+                          </div>
+                          <span className="text-sm font-medium text-stone-900">{nome}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+
+                  <button 
+                    onClick={handleSalvarConfiguracoes}
+                    disabled={salvandoConfig}
+                    className="w-full py-4 mt-4 bg-[#C87A2C] hover:bg-[#E59400] text-white rounded-sm tracking-widest uppercase text-xs font-bold transition-all shadow-sm outline-none flex items-center justify-center gap-2"
+                  >
+                    {salvandoConfig ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    Salvar Transportadoras
+                  </button>
+                </div>
               )}
             </div>
-
-            <form key={produtoEditando ? produtoEditando.id : 'novo'} onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Nome do Produto</label>
-                  <input name="name" type="text" defaultValue={produtoEditando?.name} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Linha</label>
-                  <input name="line" type="text" defaultValue={produtoEditando?.line} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-stone-700">História da Vela (Storytelling)</label>
-                  <textarea name="historia" rows={4} defaultValue={produtoEditando?.historia} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none resize-none" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Notas Aromáticas</label>
-                  <input name="notes" type="text" defaultValue={produtoEditando?.notes} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Sensação</label>
-                  <input name="feeling" type="text" defaultValue={produtoEditando?.feeling} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                {/* Campos Físicos / Envio */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Peso (Ex: 200g)</label>
-                  <input name="weight" type="text" defaultValue={produtoEditando?.weight} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Duração (Ex: 40h)</label>
-                  <input name="burnTime" type="text" defaultValue={produtoEditando?.burnTime} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 md:col-span-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-stone-700">Altura (cm)</label>
-                    <input name="altura" type="number" step="0.1" defaultValue={produtoEditando?.altura || 0} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-stone-700">Largura (cm)</label>
-                    <input name="largura" type="number" step="0.1" defaultValue={produtoEditando?.largura || 0} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-stone-700">Comprimento (cm)</label>
-                    <input name="comprimento" type="number" step="0.1" defaultValue={produtoEditando?.comprimento || 0} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Preço Venda (R$)</label>
-                  <input name="price" type="number" step="0.01" defaultValue={produtoEditando?.price} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Estoque Físico</label>
-                  <input name="estoque" type="number" defaultValue={produtoEditando?.estoque || 0} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" required />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Tag (Ex: Lançamento)</label>
-                  <input name="tag" type="text" defaultValue={produtoEditando?.tag} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-stone-700">Cor da Tag (Tailwind)</label>
-                  <input name="tagColor" type="text" defaultValue={produtoEditando?.tagColor} placeholder="bg-[#C87A2C]" className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none" />
-                </div>
-
-                <div className="space-y-4 md:col-span-2 pt-4 border-t border-stone-100">
-                  <h3 className="text-lg font-medium text-stone-800">Galeria de Imagens</h3>
-                  <p className="text-sm text-stone-500">A primeira imagem será a capa do produto. Arraste para reordenar.</p>
-                  
-                  {galeria.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {galeria.map((img, index) => (
-                        <div key={img.id} className="relative group bg-stone-100 rounded-lg border border-stone-200 p-2 flex flex-col items-center">
-                          <div className="w-full aspect-square relative rounded-md overflow-hidden mb-2">
-                            <img src={img.url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
-                            {index === 0 && <span className="absolute top-1 left-1 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">CAPA</span>}
-                          </div>
-                          <div className="flex items-center justify-between w-full px-1">
-                            <button type="button" onClick={() => moverImagem(index, 'esq')} disabled={index === 0} className="p-1 text-stone-500 hover:text-amber-700 disabled:opacity-30"><ArrowLeft className="w-4 h-4" /></button>
-                            <button type="button" onClick={() => removerImagem(img.id)} className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
-                            <button type="button" onClick={() => moverImagem(index, 'dir')} disabled={index === galeria.length - 1} className="p-1 text-stone-500 hover:text-amber-700 disabled:opacity-30"><ArrowRight className="w-4 h-4" /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <label 
-                    className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${isHovering ? 'border-amber-500 bg-amber-50/50' : 'border-stone-300 bg-stone-50 hover:bg-stone-100'}`}
-                    onDragEnter={() => setIsHovering(true)} onDragLeave={() => setIsHovering(false)} onDrop={handleImageDrop} onDragOver={(e) => e.preventDefault()}
-                  >
-                    <UploadCloud className={`w-10 h-10 mb-3 transition-colors ${isHovering ? 'text-amber-600' : 'text-stone-400'}`} />
-                    <p className="text-sm font-medium text-stone-700">Adicionar imagens</p>
-                    <input type="file" multiple accept="image/png, image/jpeg, image/jpg" className="hidden" onChange={handleImageSelect} />
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-6 border-t border-stone-100">
-                <button type="submit" disabled={isLoading} className={`px-6 py-3 text-sm font-medium text-white rounded-lg flex items-center gap-2 outline-none disabled:opacity-70 ${isSuccess ? 'bg-green-600' : 'bg-amber-700 hover:bg-amber-800'}`}>
-                  {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</> : isSuccess ? <><CheckCircle2 className="w-4 h-4" /> Salvo!</> : 'Salvar Produto'}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
+          )}
+        </div>
       </main>
     </div>
-  );
+  )
+}
+
+function PedidoCard({ pedido, onSave, salvandoId }: { pedido: any, onSave: any, salvandoId: number | null }) {
+  const [status, setStatus] = useState(pedido.status)
+  const [rastreio, setRastreio] = useState(pedido.codigo_rastreio || '')
+  const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false)
+  
+  const isMudou = status !== pedido.status || rastreio !== (pedido.codigo_rastreio || '')
+
+  
+// O botão chama a API que simula a compra no Melhor Envio e atualiza o banco
+  const handleGerarEtiqueta = async () => {
+    setGerandoEtiqueta(true)
+    try {
+      const res = await fetch('/api/admin/gerar-etiqueta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pedido_id: pedido.id })
+      })
+      const data = await res.json()
+      
+      if (res.ok && data.success) {
+        setRastreio(data.rastreio)
+        setStatus('enviado')
+        // Chama a função onSave principal para atualizar os dados visuais na tela imediatamente
+        onSave(pedido.id, 'enviado', data.rastreio) 
+      } else {
+        alert('Falha ao gerar etiqueta: ' + data.error)
+      }
+    } catch (error) {
+      alert('Erro de conexão ao tentar gerar a etiqueta.')
+    } finally {
+      setGerandoEtiqueta(false)
+    }
+  }
+
+  return (
+    <div className="bg-white border border-stone-200 rounded-sm shadow-sm flex flex-col lg:flex-row overflow-hidden">
+      
+      {/* Coluna 1: Dados do Cliente */}
+      <div className="p-6 lg:w-1/3 border-b lg:border-b-0 lg:border-r border-stone-100 bg-stone-50/50">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="bg-stone-800 text-white text-[10px] uppercase tracking-widest px-2 py-1 rounded-sm font-bold">Pedido #{pedido.id}</span>
+          <span className="text-xs text-stone-500">{new Date(pedido.criado_em).toLocaleString('pt-BR')}</span>
+        </div>
+        
+        <h3 className="font-bold text-stone-900 mb-1">{pedido.cliente_nome}</h3>
+        <p className="text-sm text-stone-600 mb-1">{pedido.cliente_email}</p>
+        <p className="text-sm text-stone-600 mb-6">{pedido.cliente_telefone}</p>
+
+        <div className="flex items-start gap-3 text-sm text-stone-600">
+          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#C87A2C]" />
+          <div>
+            <p className="font-medium text-stone-900">{pedido.rua}, {pedido.numero} {pedido.complemento && ` - ${pedido.complemento}`}</p>
+            <p>{pedido.bairro} - {pedido.cidade}/{pedido.estado}</p>
+            <p>CEP: {pedido.cep}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Coluna 2: Itens */}
+      <div className="p-6 lg:w-1/3 border-b lg:border-b-0 lg:border-r border-stone-100 flex flex-col justify-center">
+        <h4 className="text-[10px] font-bold tracking-widest uppercase text-stone-400 mb-4">Itens Comprados</h4>
+        <div className="space-y-3 mb-4">
+          {pedido.itens.map((item: any) => (
+            <div key={item.id} className="flex justify-between items-center text-sm">
+              <span className="text-stone-800"><span className="font-bold text-stone-500 mr-2">{item.quantidade}x</span> {item.nome_produto}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-auto pt-4 border-t border-stone-100 flex justify-between items-center">
+          <span className="text-sm text-stone-500">Frete: R$ {Number(pedido.frete).toFixed(2).replace('.', ',')}</span>
+          <span className="font-heading text-lg text-[#C87A2C]">Total: R$ {Number(pedido.total).toFixed(2).replace('.', ',')}</span>
+        </div>
+      </div>
+
+      {/* Coluna 3: Ações do Admin */}
+      <div className="p-6 lg:w-1/3 flex flex-col justify-center space-y-4 relative">
+        {/* Botão de Gerar Etiqueta aparece apenas se o pedido estiver pago */}
+        {pedido.status === 'pago' && !pedido.codigo_rastreio && (
+          <button 
+            onClick={handleGerarEtiqueta}
+            disabled={gerandoEtiqueta}
+            className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-sm tracking-widest uppercase text-[10px] font-bold transition-all shadow-sm outline-none flex items-center justify-center gap-2 mb-2"
+          >
+            {gerandoEtiqueta ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+            Comprar e Gerar Etiqueta Automática
+          </button>
+        )}
+
+        <div>
+          <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">Status do Pedido</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none">
+            <option value="aguardando_pagamento">Aguardando Pagamento</option>
+            <option value="pago">Pagamento Aprovado</option>
+            <option value="enviado">Pedido Enviado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-1.5 block">Rastreio Oficial</label>
+          <div className="relative">
+            <Truck className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+            <input type="text" value={rastreio} onChange={(e) => setRastreio(e.target.value)} placeholder="Ex: QM123456789BR" className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none placeholder:text-stone-400" />
+          </div>
+        </div>
+
+        <button onClick={() => onSave(pedido.id, status, rastreio)} disabled={!isMudou || salvandoId === pedido.id} className={`w-full py-3 mt-2 rounded-sm tracking-widest uppercase text-xs font-bold transition-all shadow-sm outline-none flex items-center justify-center gap-2 ${isMudou ? 'bg-[#C87A2C] hover:bg-[#E59400] text-white' : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}>
+          {salvandoId === pedido.id ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Salvar Alterações
+        </button>
+      </div>
+    </div>
+  )
 }
