@@ -48,6 +48,7 @@ useEffect(() => {
       router.push('/loja')
     }
   }, [user, items, router, pedidoFinalizado])
+  
   if (!isMounted || !user || (items.length === 0 && !pedidoFinalizado)) return null
 
   const calcularFrete = async (cepDestino: string) => {
