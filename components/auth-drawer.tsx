@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, Edit2, Check, Copy, CheckCircle2 } from 'lucide-react';
+import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, Edit2, Check, Copy, CheckCircle2, FileText } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 
 const statusMap: Record<string, { label: string, color: string }> = {
@@ -17,8 +17,8 @@ export function AuthDrawer() {
   
   const [loggedView, setLoggedView] = useState<'menu' | 'orders' | 'edit_profile'>('menu');
   
-  const [formData, setFormData] = useState({ nome: '', email: '', telefone: '', senha: '' });
-  const [editData, setEditData] = useState({ nome: '', telefone: '' });
+  const [formData, setFormData] = useState({ nome: '', email: '', telefone: '', cpf: '', senha: '' });
+  const [editData, setEditData] = useState({ nome: '', telefone: '', cpf: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -42,11 +42,10 @@ export function AuthDrawer() {
       }, 300);
     }
     if (user) {
-      setEditData({ nome: user.nome, telefone: user.telefone || '' });
+      setEditData({ nome: user.nome, telefone: user.telefone || '', cpf: user.cpf || '' });
     }
   }, [isOpen, user, view, setView]);
 
-  // Busca os pedidos quando o cliente abre a tela de "Meus Pedidos"
   useEffect(() => {
     if (loggedView === 'orders' && user) {
       fetchOrders();
@@ -115,7 +114,7 @@ export function AuthDrawer() {
         } else if (action === 'forgot_password') {
           setSuccessMsg(data.message);
         } else if (action === 'update_profile') {
-          setUser({ ...user!, nome: data.user.nome, telefone: data.user.telefone });
+          setUser({ ...user!, nome: data.user.nome, telefone: data.user.telefone, cpf: data.user.cpf });
           setLoggedView('menu');
         }
       } else {
@@ -145,9 +144,6 @@ export function AuthDrawer() {
         </button>
 
         {user ? (
-          /* ========================================== */
-          /* LOGADO */
-          /* ========================================== */
           loggedView === 'menu' ? (
             <div className="flex flex-col h-full animate-fade-in pt-12">
               <div className="flex flex-col items-center justify-center pt-8 pb-8 bg-stone-50 border-b border-stone-100 px-6 relative">
@@ -160,6 +156,7 @@ export function AuthDrawer() {
                 <h3 className="font-heading text-xl text-stone-900">{user.nome}</h3>
                 <p className="text-sm text-stone-500 mt-1">{user.email}</p>
                 {user.telefone && <p className="text-xs text-stone-400 mt-1">{user.telefone}</p>}
+                {user.cpf && <p className="text-xs text-stone-400 mt-1">CPF: {user.cpf}</p>}
               </div>
 
               <div className="flex-1 p-4 space-y-2">
@@ -198,6 +195,13 @@ export function AuthDrawer() {
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
                     <input required type="text" name="nome" value={editData.nome} onChange={handleEditChange} className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CPF</label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                    <input type="text" name="cpf" value={editData.cpf} onChange={handleEditChange} placeholder="000.000.000-00" className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
                   </div>
                 </div>
                 <div>
@@ -267,20 +271,29 @@ export function AuthDrawer() {
                             <span className="font-heading text-[#C87A2C]">R$ {Number(pedido.total).toFixed(2).replace('.', ',')}</span>
                           </div>
 
-                          {/* Área do Código de Rastreio */}
                           {pedido.codigo_rastreio && (
-                            <div className="px-4 py-3 bg-[#C87A2C]/5 border-t border-[#C87A2C]/20 flex justify-between items-center">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-[#C87A2C] uppercase tracking-widest font-bold mb-0.5">Rastreio</span>
-                                <span className="text-sm font-medium text-stone-900">{pedido.codigo_rastreio}</span>
+                            <div className="px-4 py-4 bg-[#C87A2C]/5 border-t border-[#C87A2C]/20 flex flex-col gap-3">
+                              <div className="flex justify-between items-center">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-[#C87A2C] uppercase tracking-widest font-bold mb-0.5">Rastreio</span>
+                                  <span className="text-sm font-medium text-stone-900">{pedido.codigo_rastreio}</span>
+                                </div>
+                                <button 
+                                  onClick={() => handleCopiarRastreio(pedido.codigo_rastreio, pedido.id)}
+                                  className="p-2 text-[#C87A2C] hover:bg-[#C87A2C]/10 rounded-sm transition-colors outline-none"
+                                  title="Copiar código"
+                                >
+                                  {copiadoId === pedido.id ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+                                </button>
                               </div>
-                              <button 
-                                onClick={() => handleCopiarRastreio(pedido.codigo_rastreio, pedido.id)}
-                                className="p-2 text-[#C87A2C] hover:bg-[#C87A2C]/10 rounded-sm transition-colors outline-none"
-                                title="Copiar código"
+                              <a 
+                                href={`https://app.melhorenvio.com/rastreamento/?codigo=${pedido.codigo_rastreio}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full text-center py-2.5 bg-[#C87A2C] hover:bg-[#E59400] text-white text-[11px] font-bold tracking-widest uppercase rounded-sm transition-colors outline-none"
                               >
-                                {copiadoId === pedido.id ? <CheckCircle2 size={18} /> : <Copy size={18} />}
-                              </button>
+                                Acompanhar Entrega no Site
+                              </a>
                             </div>
                           )}
                         </div>
@@ -292,9 +305,6 @@ export function AuthDrawer() {
             </div>
           )
         ) : (
-          /* ========================================== */
-          /* VISITANTE (Mantido inalterado) */
-          /* ========================================== */
           <div className="flex flex-col h-full">
             {view === 'forgot_password' ? (
               <div className="relative p-6 border-b border-stone-100 flex items-center gap-3 pt-12">
@@ -363,6 +373,13 @@ export function AuthDrawer() {
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
                         <input required type="text" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Como devemos te chamar?" className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#C87A2C] outline-none transition-colors" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CPF</label>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                        <input required type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#C87A2C] outline-none transition-colors" />
                       </div>
                     </div>
                     <div>

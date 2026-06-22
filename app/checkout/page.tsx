@@ -19,7 +19,7 @@ if (publicKey) {
   console.error("Chave Pública do Mercado Pago não encontrada no .env");
 }
 
-type OpcaoFrete = { id: number; nome: string; empresa: string; preco: number; prazo: number; };
+type OpcaoFrete = { id: number; nome: string; empresa: string; nomeCompleto: string; preco: number; prazo: number; };
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -27,7 +27,8 @@ export default function CheckoutPage() {
   const { user } = useAuthStore()
   const [isMounted, setIsMounted] = useState(false)
 
-  // Estados de Endereço e Frete
+  // Estados de Endereço, Frete e CPF
+  const [cpf, setCpf] = useState('')
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' })
   const [buscandoCep, setBuscandoCep] = useState(false)
@@ -40,15 +41,20 @@ export default function CheckoutPage() {
   const [pixData, setPixData] = useState<any>(null)
   const [copiado, setCopiado] = useState(false)
 
-useEffect(() => {
+  useEffect(() => {
     setIsMounted(true)
     
-    // Só redireciona de volta pra loja se a sacola estiver vazia E o pedido não tiver sido finalizado
+    // Auto-preenche o CPF se já estiver no perfil do usuário
+    if (user?.cpf && !cpf) {
+      setCpf(user.cpf)
+    }
+    
+    // Redireciona de volta pra loja se a sacola estiver vazia E o pedido não tiver sido finalizado
     if (!user || (items.length === 0 && !pedidoFinalizado)) {
       router.push('/loja')
     }
-  }, [user, items, router, pedidoFinalizado])
-  
+  }, [user, items, router, pedidoFinalizado, cpf])
+
   if (!isMounted || !user || (items.length === 0 && !pedidoFinalizado)) return null
 
   const calcularFrete = async (cepDestino: string) => {
@@ -104,11 +110,10 @@ useEffect(() => {
   const valorFrete = freteSelecionado ? freteSelecionado.preco : 0
   const total = subtotal + valorFrete
 
- // ==========================================
+  // ==========================================
   // LÓGICA DE SUBMISSÃO DO BRICK
   // ==========================================
   const onSubmitPayment = async (param: any) => {
-    // Extrai os dados reais do formulário de dentro do objeto do Mercado Pago
     const formData = param.formData;
 
     return new Promise<void>((resolve, reject) => {
@@ -117,12 +122,15 @@ useEffect(() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           usuario_id: user.id,
+          cpf: cpf, // Enviamos o CPF para o back-end
+          transportadora_nome: freteSelecionado?.nomeCompleto || `${freteSelecionado?.empresa} ${freteSelecionado?.nome}`,
+          transportadora_servico_id: freteSelecionado?.id,
           items, 
           subtotal, 
           frete: valorFrete, 
           total,
           endereco: { ...endereco, cep },
-          formData // Agora enviamos o pacote de dados limpo e correto
+          formData 
         })
       })
       .then((response) => response.json())
@@ -208,18 +216,25 @@ useEffect(() => {
         <div className="flex flex-col lg:flex-row gap-10">
           <div className="flex-1 space-y-8">
             
-            {/* ETAPA 1: Endereço (Simplificada na visualização para foco) */}
+            {/* ETAPA 1: Endereço e CPF */}
             <section className="bg-white p-6 md:p-8 border border-stone-200 rounded-sm shadow-sm">
               <h2 className="text-sm font-bold tracking-widest uppercase text-stone-900 mb-6 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-[#C87A2C] text-white flex items-center justify-center text-xs">1</span>
-                Endereço de Entrega
+                Dados e Endereço de Entrega
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2 relative">
+                
+                <div className="md:col-span-2">
+                  <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CPF (Obrigatório para o envio)</label>
+                  <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" maxLength={14} className="w-full md:w-1/2 px-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
+                </div>
+
+                <div className="md:col-span-2 relative mt-2">
                   <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CEP</label>
                   <input type="text" value={cep} onChange={(e) => buscarCEP(e.target.value)} placeholder="00000-000" maxLength={9} className="w-full md:w-1/2 px-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
                   {buscandoCep && <Loader2 className="absolute left-[45%] top-[38px] w-4 h-4 animate-spin text-[#C87A2C]" />}
                 </div>
+
                 <div className="md:col-span-2">
                   <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">Rua / Avenida</label>
                   <input type="text" name="rua" value={endereco.rua} onChange={handleEnderecoChange} className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
@@ -281,21 +296,19 @@ useEffect(() => {
               )}
             </section>
 
-            {/* ETAPA 3: Pagamento (Renderiza apenas se frete e número da casa existirem) */}
-            {freteSelecionado && endereco.numero && (
+            {/* ETAPA 3: Pagamento (Renderiza apenas se CPF, frete e número da casa existirem) */}
+            {freteSelecionado && endereco.numero && cpf && (
               <section className="bg-white p-6 md:p-8 border border-stone-200 rounded-sm shadow-sm animate-fade-in">
                 <h2 className="text-sm font-bold tracking-widest uppercase text-stone-900 mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-[#C87A2C] text-white flex items-center justify-center text-xs">3</span>
                   Pagamento Seguro
                 </h2>
                 
-                {/* O component Payment usa a chave key para forçar atualização se o total do frete mudar */}
-                
                 <Payment
                   initialization={{ 
-                    amount: Number(total.toFixed(2)), // Força no máximo 2 casas decimais
+                    amount: Number(total.toFixed(2)),
                     payer: {
-                      email: user.email, // PIX e Boleto precisam do e-mail do cliente
+                      email: user.email, 
                     }
                   }}
                   customization={{
