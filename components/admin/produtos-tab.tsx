@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Loader2, Plus, Trash, Edit2, X, Image as ImageIcon, GripVertical, UploadCloud, ShoppingBag, Save } from 'lucide-react'
+import { Loader2, Plus, Trash, Edit2, X, Image as ImageIcon, UploadCloud, ShoppingBag, Save } from 'lucide-react'
 
 const PRODUTO_INICIAL = {
   id: '', name: '', line: '', notes: '', feeling: '', historia: '', price: '', tag: '', tagColor: '#C87A2C', burnTime: '', weight: '', altura: '', largura: '', comprimento: '', estoque: 0
@@ -35,8 +35,6 @@ export function ProdutosTab() {
     if (produto) {
       setProdutoEditando({ ...PRODUTO_INICIAL, ...produto })
       
-      // Resgate inteligente: Se o produto antigo tem a foto salva no campo 'image' 
-      // mas ainda não tem nada na galeria 'imagens', nós criamos um item falso para aparecer no modal.
       if ((!produto.imagens || produto.imagens.length === 0) && produto.image) {
         setImagens([{ url: produto.image, ordem: 0 }])
       } else {
@@ -157,9 +155,8 @@ export function ProdutosTab() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {produtos.map(p => (
-            <div key={p.id} className="bg-white border border-stone-200 rounded-md shadow-sm overflow-hidden flex flex-col">
+            <div key={p.id} className={`bg-white border-2 rounded-md shadow-sm overflow-hidden flex flex-col relative ${p.estoque === 0 ? 'border-red-400' : p.estoque <= 3 ? 'border-orange-400' : 'border-stone-200 border-opacity-50 font-normal'}`}>
               <div className="aspect-square relative bg-stone-100 border-b border-stone-100">
-                {/* Substituído para tag IMG padrão, a prova de falhas */}
                 {p.image && typeof p.image === 'string' && p.image.trim() !== '' ? (
                   <img src={p.image} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
                 ) : (
@@ -174,7 +171,9 @@ export function ProdutosTab() {
                 <h3 className="font-heading text-sm text-stone-900 mb-2 leading-tight line-clamp-2">{p.name}</h3>
                 <div className="mt-auto flex items-center justify-between">
                   <span className="font-bold text-[#C87A2C] text-xs">R$ {Number(p.price).toFixed(2).replace('.', ',')}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${p.estoque > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>Qtd: {p.estoque}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${p.estoque === 0 ? 'bg-red-100 text-red-700' : p.estoque <= 3 ? 'bg-orange-100 text-orange-800 flex items-center gap-1' : 'bg-green-100 text-green-700'}`}>
+                    {p.estoque <= 3 && p.estoque > 0 && <span title="Estoque Baixo">⚠️</span>} Qtd: {p.estoque}
+                  </span>
                 </div>
               </div>
               <div className="p-2 border-t border-stone-100 bg-stone-50 flex gap-2">
@@ -188,7 +187,8 @@ export function ProdutosTab() {
 
       {isFormAberto && produtoEditando && (
         <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm z-[80] flex items-center justify-center p-2 sm:p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsFormAberto(false) }}>
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col relative overflow-hidden">
+          
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col relative overflow-hidden">
             
             <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between bg-white shrink-0">
               <h2 className="text-xl font-heading text-stone-900">{produtoEditando.id ? 'Editar Produto' : 'Novo Produto'}</h2>
@@ -201,7 +201,6 @@ export function ProdutosTab() {
                <button type="button" onClick={() => setFormTab('frete')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'frete' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>3. Logística</button>
             </div>
 
-            {/* MIN-H-0 ADICIONADO AQUI PARA CONSERTAR O SCROLL */}
             <form id="form-produto" onSubmit={handleSalvarProduto} className="flex-1 overflow-y-auto p-5 sm:p-6 bg-white min-h-0">
               
               {formTab === 'basico' && (
@@ -220,9 +219,9 @@ export function ProdutosTab() {
                       <input required type="number" value={produtoEditando.estoque} onChange={(e) => setProdutoEditando({...produtoEditando, estoque: Number(e.target.value)})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                     </div>
                     <div>
-  <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Peso Comercial (Visível ao Cliente)</label>
-  <input type="text" value={produtoEditando.peso_comercial} onChange={(e) => setProdutoEditando({...produtoEditando, peso_comercial: e.target.value})} placeholder="Ex: 50g ou 250g" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] outline-none" />
-</div>
+                      <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Peso Comercial (Visível ao Cliente)</label>
+                      <input type="text" value={produtoEditando.peso_comercial || ''} onChange={(e) => setProdutoEditando({...produtoEditando, peso_comercial: e.target.value})} placeholder="Ex: 50g ou 250g" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] outline-none" />
+                    </div>
                   </div>
 
                   <div className="bg-stone-50 p-4 border border-stone-200 rounded-md">
@@ -237,31 +236,33 @@ export function ProdutosTab() {
                       </label>
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
+                    {/* AQUI ESTÁ O "QUADRADINHO NORMAL": w-12 h-12 (48x48px fixos), sem estourar o layout */}
+                    <div className="flex flex-wrap gap-2 mt-4">
                       {imagens.map((img, idx) => (
-                        <div key={idx} draggable onDragStart={(e) => handleDragStart(e, idx)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, idx)} className={`relative w-24 h-24 rounded-md border-2 overflow-hidden bg-white cursor-grab active:cursor-grabbing group ${idx === 0 ? 'border-[#C87A2C]' : 'border-stone-200'}`}>
+                        <div key={idx} draggable onDragStart={(e) => handleDragStart(e, idx)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, idx)} className={`relative w-12 h-12 shrink-0 rounded-sm border-2 overflow-hidden bg-white cursor-grab active:cursor-grabbing group ${idx === 0 ? 'border-[#C87A2C]' : 'border-stone-200'}`}>
                           
                           {img.url && typeof img.url === 'string' && img.url.trim() !== '' ? (
                             <img src={img.url} alt={`img-${idx}`} className="w-full h-full object-cover absolute inset-0" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-300"><ImageIcon size={24} /></div>
+                            <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-300"><ImageIcon size={16} /></div>
                           )}
                           
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                            <GripVertical className="text-white w-5 h-5" />
-                            <button type="button" onClick={() => handleRemoveImage(idx)} className="p-1 bg-red-500 text-white rounded"><Trash size={12}/></button>
+                          {/* Overlay com botão de apagar */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                            <button type="button" onClick={() => handleRemoveImage(idx)} className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 outline-none"><Trash size={12}/></button>
                           </div>
-                          {idx === 0 && <span className="absolute bottom-0 left-0 w-full bg-[#C87A2C] text-white text-[8px] font-bold text-center py-0.5 uppercase tracking-widest">Capa</span>}
+                          
+                          {/* Tag de Capa */}
+                          {idx === 0 && <span className="absolute bottom-0 left-0 w-full bg-[#C87A2C] text-white text-[7px] font-bold text-center py-[2px] uppercase tracking-widest z-10 leading-none">Capa</span>}
                         </div>
                       ))}
-                      {imagens.length === 0 && (
-                        <div className="w-full py-8 border-2 border-dashed border-stone-300 rounded-md flex flex-col items-center justify-center text-stone-400">
-                          <ImageIcon size={32} className="mb-2 opacity-50" />
-                          <span className="text-xs">Nenhuma imagem selecionada</span>
-                        </div>
-                      )}
                     </div>
-
+                    {imagens.length === 0 && (
+                        <div className="w-full mt-3 py-6 border-2 border-dashed border-stone-300 rounded-md flex flex-col items-center justify-center text-stone-400">
+                          <ImageIcon size={24} className="mb-2 opacity-50" />
+                          <span className="text-[10px] uppercase tracking-widest">Nenhuma foto</span>
+                        </div>
+                    )}
                     
                   </div>
                 </div>
@@ -304,32 +305,32 @@ export function ProdutosTab() {
 
               {formTab === 'frete' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-  <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Peso Bruto Total p/ Frete (g)</label>
-  <input 
-    type="number" 
-    value={produtoEditando.weight ? Math.round(Number(produtoEditando.weight) * 1000) : ''} 
-    onChange={(e) => setProdutoEditando({...produtoEditando, weight: parseFloat(e.target.value) / 1000})} 
-    placeholder="Ex: 300 (para 300g totais)" 
-    className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 outline-none" 
-  />
-</div>
                   <div>
-                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block flex items-center justify-between">
+                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Peso Bruto Total p/ Frete (g)</label>
+                    <input 
+                      type="number" 
+                      value={produtoEditando.weight ? Math.round(Number(produtoEditando.weight) * 1000) : ''} 
+                      onChange={(e) => setProdutoEditando({...produtoEditando, weight: parseFloat(e.target.value) / 1000})} 
+                      placeholder="Ex: 300 (para 300g totais)" 
+                      className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 outline-none" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 flex items-center justify-between">
                       Altura
                       <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">Centímetros (cm)</span>
                     </label>
                     <input required type="number" value={produtoEditando.altura} onChange={(e) => setProdutoEditando({...produtoEditando, altura: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block flex items-center justify-between">
+                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 flex items-center justify-between">
                       Largura
                       <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">Centímetros (cm)</span>
                     </label>
                     <input required type="number" value={produtoEditando.largura} onChange={(e) => setProdutoEditando({...produtoEditando, largura: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block flex items-center justify-between">
+                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 flex items-center justify-between">
                       Comprimento
                       <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">Centímetros (cm)</span>
                     </label>
