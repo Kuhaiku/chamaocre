@@ -7,14 +7,15 @@ export async function POST(request: Request) {
 
     if (!pedido_id) return NextResponse.json({ error: 'ID não informado' }, { status: 400 });
 
-    const token = process.env.MELHOR_ENVIO_TOKEN;
+    // Puxando o token correto para compras
+    const token = process.env.MELHOR_ENVIO_TOKEN_COMPRA;
     if (!token) {
-      return NextResponse.json({ error: 'Token do Melhor Envio ausente no servidor.' }, { status: 500 });
+      return NextResponse.json({ error: 'Token de compra do Melhor Envio ausente no servidor.' }, { status: 500 });
     }
 
-    // 1. Busca os dados completos do pedido e do cliente
+    // 1. Busca os dados completos do pedido e do cliente (AGORA INCLUINDO O CPF E O SERVIÇO)
     const [pedidos]: any = await pool.execute(
-      `SELECT p.*, u.nome, u.email, u.telefone 
+      `SELECT p.*, u.nome, u.email, u.telefone, u.cpf 
        FROM pedidos p 
        JOIN usuarios u ON p.usuario_id = u.id 
        WHERE p.id = ?`,
@@ -23,24 +24,26 @@ export async function POST(request: Request) {
     const pedido = pedidos[0];
 
     if (!pedido) return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 });
+    if (!pedido.cpf) return NextResponse.json({ error: 'CPF do cliente ausente no cadastro.' }, { status: 400 });
+    if (!pedido.transportadora_servico_id) return NextResponse.json({ error: 'Serviço de frete não registrado neste pedido.' }, { status: 400 });
 
     // 2. Busca os itens comprados
     const [itens]: any = await pool.execute('SELECT * FROM itens_pedido WHERE pedido_id = ?', [pedido_id]);
 
     // =====================================================================
-    // PAYLOAD OFICIAL DO MELHOR ENVIO (Integração Real)
+    // PAYLOAD OFICIAL DO MELHOR ENVIO (Integração Real Dinâmica)
     // =====================================================================
     const payloadMelhorEnvio = {
-      service: 1, // ATENÇÃO: 1 é o código padrão para Correios PAC
-      agency: 1,  // ID da agência de postagem (necessário para Jadlog, etc)
+      service: pedido.transportadora_servico_id, // ID dinâmico do serviço escolhido pelo cliente
+      agency: 1,  // ID da agência de postagem (Mude se for usar Jadlog e tiver ID específico na sua região)
       from: {
         name: "Chama Ocre",
-        phone: "22992082292", 
-        email: process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-        document: "18272995760", // IMPORTANTE: Coloque seu CPF/CNPJ real aqui
-        address: "Rua campos de Paz",
-        number: "8",
-        district: "Viaduto",
+        phone: "22999999999", 
+        email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || "seu@email.com",
+        document: "00000000000", // IMPORTANTE: Coloque seu CPF/CNPJ real aqui
+        address: "Sua Rua",
+        number: "123",
+        district: "Seu Bairro",
         city: "Araruama",
         state_abbr: "RJ",
         country_id: "BR",
@@ -50,7 +53,7 @@ export async function POST(request: Request) {
         name: pedido.nome,
         phone: pedido.telefone || "00000000000",
         email: pedido.email,
-        document: "00000000000", // IMPORTANTE: A API do ME exige o CPF do cliente
+        document: pedido.cpf.replace(/\D/g, ''), // CPF do cliente limpo, apenas números
         address: pedido.rua,
         number: pedido.numero,
         complement: pedido.complemento || "",
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
         insurance_value: Number(pedido.total),
         receipt: false,
         own_hand: false,
-        non_commercial: true 
+        non_commercial: true // Envio com Declaração de Conteúdo (Sem Nota Fiscal)
       }
     };
 
