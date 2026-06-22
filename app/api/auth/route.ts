@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import pool from '@/lib/db';
 
-// Configuração do disparador de e-mails (Substitua pelos seus dados reais depois)
+// Configuração do disparador de e-mails
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: Number(process.env.EMAIL_PORT) || 587,
@@ -19,8 +19,10 @@ export async function POST(request: Request) {
     const data = await request.json();
     const action = data.action;
 
+    // ================== REGISTRO ==================
     if (action === 'register') {
-      const { nome, email, telefone, senha } = data;
+      // CORREÇÃO: Adicionado o cpf aqui na desestruturação
+      const { nome, email, telefone, senha, cpf } = data; 
       if (!nome || !email || !senha) return NextResponse.json({ error: 'Preencha todos os campos obrigatórios' }, { status: 400 });
 
       const [existing]: any = await pool.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
@@ -29,12 +31,15 @@ export async function POST(request: Request) {
       const hashedSenha = await bcrypt.hash(senha, 10);
       const [result]: any = await pool.execute(
         'INSERT INTO usuarios (nome, email, telefone, senha, cpf) VALUES (?, ?, ?, ?, ?)',
-        [nome, email, telefone || '', hashedSenha, '']
+        // CORREÇÃO: Injetando o cpf no banco ao invés de uma string vazia ''
+        [nome, email, telefone || '', hashedSenha, cpf || ''] 
       );
 
-      return NextResponse.json({ success: true, user: { id: result.insertId, nome, email, telefone } });
+      // CORREÇÃO: Devolvendo o cpf para o store do front-end
+      return NextResponse.json({ success: true, user: { id: result.insertId, nome, email, telefone, cpf: cpf || '' } });
     }
 
+    // ================== LOGIN ==================
     if (action === 'login') {
       const { email, senha } = data;
       if (!email || !senha) return NextResponse.json({ error: 'Preencha e-mail e senha' }, { status: 400 });
@@ -46,18 +51,24 @@ export async function POST(request: Request) {
       const isValid = await bcrypt.compare(senha, user.senha);
       if (!isValid) return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
 
-      return NextResponse.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, telefone: user.telefone } });
+      // CORREÇÃO: Devolvendo o cpf do banco de dados para o front-end
+      return NextResponse.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, telefone: user.telefone, cpf: user.cpf } });
     }
 
     // ================== ATUALIZAR PERFIL ==================
     if (action === 'update_profile') {
-      const { id, nome, telefone } = data;
+      // CORREÇÃO: Lendo o cpf do data
+      const { id, nome, telefone, cpf } = data;
       if (!id || !nome) return NextResponse.json({ error: 'ID e Nome são obrigatórios' }, { status: 400 });
 
-      await pool.execute('UPDATE usuarios SET nome = ?, telefone = ? WHERE id = ?', [nome, telefone || '', id]);
-      return NextResponse.json({ success: true, user: { id, nome, telefone } });
+      // CORREÇÃO: Atualizando o CPF no banco de dados também
+      await pool.execute('UPDATE usuarios SET nome = ?, telefone = ?, cpf = ? WHERE id = ?', [nome, telefone || '', cpf || '', id]);
+      
+      // CORREÇÃO: Retornando os dados com o cpf atualizado
+      return NextResponse.json({ success: true, user: { id, nome, telefone, cpf } });
     }
-// ================== ESQUECI A SENHA ==================
+
+    // ================== ESQUECI A SENHA ==================
     if (action === 'forgot_password') {
       const { email } = data;
       if (!email) return NextResponse.json({ error: 'Preencha o e-mail' }, { status: 400 });
@@ -76,12 +87,10 @@ export async function POST(request: Request) {
       const resetLink = `${appUrl}/reset-senha?token=${token}`;
       const logoUrl = `${appUrl}/imagens/Logofaixa.png`;
       
-      // Busca os 3 últimos produtos cadastrados para vitrine
       const [ultimosProdutos]: any = await pool.execute(
         'SELECT id, name, price, image FROM produtos ORDER BY id DESC LIMIT 3'
       );
 
-      // Monta o HTML dos produtos dinamicamente
       const produtosHTML = ultimosProdutos.map((p: any) => `
         <td width="33%" align="center" style="padding: 10px; vertical-align: top;">
             <a href="${appUrl}/produto/${p.id}" style="text-decoration: none; color: #333;">
@@ -105,28 +114,20 @@ export async function POST(request: Request) {
               <tr>
                   <td align="center">
                       <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                          
-                          <!-- Header / Logo Atualizado -->
                           <tr>
                               <td align="center" style="padding: 30px 20px 20px 20px;">
                                   <img src="${logoUrl}" alt="Logo Chama Ocre" style="max-width: 180px; height: auto; display: block; border: none;" />
                               </td>
                           </tr>
-                          
-                          <!-- Banner -->
                           <tr>
                               <td align="center" style="background-color: #C17722; padding: 30px 20px;">
                                   <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: bold;">Recuperação de Senha</h1>
                               </td>
                           </tr>
-                          
-                          <!-- Content -->
                           <tr>
                               <td style="padding: 40px 30px 20px 30px; line-height: 1.6;">
                                   <p style="margin: 0 0 20px 0; font-size: 16px;">Olá <strong>${users[0].nome}</strong>,</p>
                                   <p style="margin: 0 0 20px 0; font-size: 16px;">Você solicitou a recuperação de senha. Clique no botão abaixo para criar uma nova senha:</p>
-                                  
-                                  <!-- Button -->
                                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                       <tr>
                                           <td align="center" style="padding: 10px 0 30px 0;">
@@ -134,17 +135,13 @@ export async function POST(request: Request) {
                                           </td>
                                       </tr>
                                   </table>
-                                  
                                   <p style="margin: 0 0 20px 0; font-size: 14px; color: #666666;">
                                       Se o botão não funcionar, copie e cole o link abaixo no seu navegador:<br>
                                       <a href="${resetLink}" style="color: #C17722; word-break: break-all;">${resetLink}</a>
                                   </p>
-                                  
                                   <p style="margin: 0; font-size: 14px; font-weight: bold; color: #d9534f;">Este link expira em 1 hora.</p>
                               </td>
                           </tr>
-
-                          <!-- Produtos Recomendados -->
                           ${ultimosProdutos.length > 0 ? `
                           <tr>
                               <td style="padding: 0 30px 30px 30px;">
@@ -158,8 +155,6 @@ export async function POST(request: Request) {
                               </td>
                           </tr>
                           ` : ''}
-                          
-                          <!-- Footer -->
                           <tr>
                               <td align="center" style="padding: 20px; background-color: #f9f9f9; border-top: 1px solid #eeeeee; font-size: 12px; color: #999999;">
                                   <p style="margin: 0;">Caso não tenha solicitado essa alteração, por favor ignore este e-mail.</p>
@@ -187,6 +182,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true, message: 'Se o e-mail existir, um link de recuperação foi enviado.' });
     }
+
     // ================== REDEFINIR SENHA ==================
     if (action === 'reset_password') {
       const { token, novaSenha } = data;
@@ -199,7 +195,7 @@ export async function POST(request: Request) {
       const hashedSenha = await bcrypt.hash(novaSenha, 10);
 
       await pool.execute('UPDATE usuarios SET senha = ? WHERE email = ?', [hashedSenha, email]);
-      await pool.execute('DELETE FROM recuperacao_senha WHERE email = ?', [email]); // Limpa os tokens usados
+      await pool.execute('DELETE FROM recuperacao_senha WHERE email = ?', [email]); 
 
       return NextResponse.json({ success: true });
     }

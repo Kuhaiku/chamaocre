@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, Edit2, Check, Copy, CheckCircle2, FileText } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
+import { useCartStore } from '@/lib/cart-store';
 
 const statusMap: Record<string, { label: string, color: string }> = {
   'aguardando_pagamento': { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700 border-orange-200' },
@@ -12,6 +14,8 @@ const statusMap: Record<string, { label: string, color: string }> = {
 };
 
 export function AuthDrawer() {
+  const router = useRouter();
+  const { items } = useCartStore();
   const { isOpen, setIsOpen, view, setView, user, setUser, logout } = useAuthStore();
   const [isMounted, setIsMounted] = useState(false);
   
@@ -23,7 +27,6 @@ export function AuthDrawer() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Estados dos Pedidos
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [copiadoId, setCopiadoId] = useState<string | null>(null);
@@ -58,9 +61,7 @@ export function AuthDrawer() {
     try {
       const res = await fetch(`/api/pedidos?usuario_id=${user.id}`);
       const data = await res.json();
-      if (res.ok) {
-        setOrders(data.pedidos || []);
-      }
+      if (res.ok) setOrders(data.pedidos || []);
     } catch (error) {
       console.error("Erro ao buscar pedidos");
     } finally {
@@ -111,6 +112,11 @@ export function AuthDrawer() {
         if (action === 'login' || action === 'register') {
           setUser(data.user);
           setLoggedView('menu');
+          // REDIRECIONAMENTO AUTOMÁTICO SE TIVER ITENS NO CARRINHO
+          if (items.length > 0) {
+            setIsOpen(false);
+            router.push('/checkout');
+          }
         } else if (action === 'forgot_password') {
           setSuccessMsg(data.message);
         } else if (action === 'update_profile') {
@@ -136,10 +142,7 @@ export function AuthDrawer() {
 
       <div className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         
-        <button 
-          onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 p-2 z-20 text-stone-400 hover:text-[#C87A2C] transition-colors outline-none"
-        >
+        <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 z-20 text-stone-400 hover:text-[#C87A2C] transition-colors outline-none">
           <X className="w-5 h-5" />
         </button>
 
@@ -160,10 +163,7 @@ export function AuthDrawer() {
               </div>
 
               <div className="flex-1 p-4 space-y-2">
-                <button 
-                  onClick={() => setLoggedView('orders')}
-                  className="w-full flex items-center justify-between p-4 rounded-sm hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-100 outline-none"
-                >
+                <button onClick={() => setLoggedView('orders')} className="w-full flex items-center justify-between p-4 rounded-sm hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-100 outline-none">
                   <div className="flex items-center gap-4">
                     <div className="p-2 bg-stone-100 rounded-sm text-stone-600"><Package className="w-5 h-5" /></div>
                     <div className="flex flex-col items-start">
@@ -224,7 +224,6 @@ export function AuthDrawer() {
                 <button onClick={() => setLoggedView('menu')} className="p-1 text-stone-400 hover:text-[#C87A2C] transition-colors outline-none"><ArrowLeft className="w-6 h-6" /></button>
                 <h3 className="font-heading text-xl text-stone-900">Meus Pedidos</h3>
               </div>
-              
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-stone-50">
                 {loadingOrders ? (
                   <div className="flex flex-col items-center justify-center h-full text-stone-400 gap-3">
