@@ -1,0 +1,16 @@
+Abra o seu banco de dados MySQL e execute estes comandos para criar as novas colunas necessárias:
+
+```sql
+ALTER TABLE usuarios ADD COLUMN cpf VARCHAR(14) AFTER telefone;
+ALTER TABLE pedidos ADD COLUMN transportadora_nome VARCHAR(255) AFTER frete;
+ALTER TABLE pedidos ADD COLUMN transportadora_servico_id INT AFTER transportadora_nome;
+
+```
+
+Abaixo está a nossa Tasklist completa. Você pode ir copiando e colando cada item por vez para implementarmos juntos:
+
+* [ ] **Task 1: Atualizar a Gaveta do Usuário (`auth-drawer.tsx`)** - Adicionar o campo CPF no cadastro e na edição de perfil, e inserir o link clicável do rastreio oficial na aba "Meus Pedidos".
+* [ ] **Task 2: Atualizar a Página de Checkout (`app/checkout/page.tsx`)** - Fazer o front-end enviar o ID e o Nome do serviço de frete escolhido para o back-end, além do CPF (caso o cliente digite no formulário).
+* [ ] **Task 3: Atualizar a API de Checkout (`app/api/checkout/route.ts`)** - Gravar o CPF no cadastro do usuário e salvar os dados da transportadora na tabela do pedido.
+* [ ] **Task 4: Atualizar o `.env**` - Adicionar a nova variável `MELHOR_ENVIO_TOKEN_COMPRA` exclusiva para geração de etiquetas.
+* [ ] **Task 5: Atualizar a API de Gerar Etiqueta (`app/api/admin/gerar-etiqueta/route.ts`)** - Configurar o uso do novo token de compra, injetar o CPF real do cliente e utilizar o ID do serviço de frete escolhido dinamicamente.
