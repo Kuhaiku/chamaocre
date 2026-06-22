@@ -8,7 +8,9 @@ export async function GET() {
 
     const produtos = produtosRows.map((produto: any) => ({
       ...produto,
-      imagens: imagensRows.filter((img: any) => img.produto_id === produto.id)
+      imagens: imagensRows
+        .filter((img: any) => img.produto_id === produto.id)
+        .map((img: any) => ({ id: img.id, url: img.imagem_url, ordem: img.ordem }))
     }));
 
     return NextResponse.json({ produtos });
@@ -20,26 +22,25 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    
+
+    // Inserindo o novo campo peso_comercial
     const [result]: any = await pool.execute(
       `INSERT INTO produtos 
-      (name, line, notes, feeling, historia, price, image, tag, tagColor, burnTime, weight, altura, largura, comprimento, estoque) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (\`name\`, \`line\`, \`notes\`, \`feeling\`, \`historia\`, \`price\`, \`image\`, \`tag\`, \`tagColor\`, \`burnTime\`, \`weight\`, \`peso_comercial\`, \`altura\`, \`largura\`, \`comprimento\`, \`estoque\`) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.name || '', data.line || '', data.notes || '', data.feeling || '', data.historia || '',
         data.price || '0', data.image || '', data.tag || '', data.tagColor || '#C87A2C', data.burnTime || '',
-        data.weight || '0', data.altura || '0', data.largura || '0', data.comprimento || '0', data.estoque || 0
+        data.weight || '0', data.peso_comercial || '', data.altura || '0', data.largura || '0', data.comprimento || '0', data.estoque || 0
       ]
     );
 
     const produtoId = result.insertId;
-
-    if (data.imagens && data.imagens.length > 0) {
+    if (data.imagens) {
       for (const img of data.imagens) {
-        await pool.execute('INSERT INTO produto_imagens (produto_id, imagem_url, ordem) VALUES (?, ?, ?)', [produtoId, img.url, img.ordem]);
+        if (img.url) await pool.execute('INSERT INTO produto_imagens (produto_id, imagem_url, ordem) VALUES (?, ?, ?)', [produtoId, img.url, img.ordem]);
       }
     }
-
     return NextResponse.json({ success: true, id: produtoId });
   } catch (error) {
     return NextResponse.json({ error: 'Erro ao criar' }, { status: 500 });
@@ -49,28 +50,20 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const data = await request.json();
-
-    if (!data.id) return NextResponse.json({ error: 'ID não informado' }, { status: 400 });
-
     await pool.execute(
       `UPDATE produtos SET 
-      name=?, line=?, notes=?, feeling=?, historia=?, price=?, image=?, tag=?, tagColor=?, burnTime=?, weight=?, altura=?, largura=?, comprimento=?, estoque=? 
+      \`name\`=?, \`line\`=?, \`notes\`=?, \`feeling\`=?, \`historia\`=?, \`price\`=?, \`image\`=?, \`tag\`=?, \`tagColor\`=?, \`burnTime\`=?, \`weight\`=?, \`peso_comercial\`=?, \`altura\`=?, \`largura\`=?, \`comprimento\`=?, \`estoque\`=? 
       WHERE id=?`,
       [
-        data.name || '', data.line || '', data.notes || '', data.feeling || '', data.historia || '',
-        data.price || '0', data.image || '', data.tag || '', data.tagColor || '#C87A2C', data.burnTime || '',
-        data.weight || '0', data.altura || '0', data.largura || '0', data.comprimento || '0', data.estoque || 0,
-        data.id
+        data.name, data.line, data.notes, data.feeling, data.historia, data.price, data.image, data.tag, data.tagColor, data.burnTime,
+        data.weight, data.peso_comercial, data.altura, data.largura, data.comprimento, data.estoque, data.id
       ]
     );
-
-    if (data.imagens) {
-      await pool.execute('DELETE FROM produto_imagens WHERE produto_id = ?', [data.id]);
-      for (const img of data.imagens) {
-        await pool.execute('INSERT INTO produto_imagens (produto_id, imagem_url, ordem) VALUES (?, ?, ?)', [data.id, img.url, img.ordem]);
-      }
+    // Atualiza imagens... (manter mesma lógica anterior)
+    await pool.execute('DELETE FROM produto_imagens WHERE produto_id = ?', [data.id]);
+    for (const img of data.imagens) {
+      if (img.url) await pool.execute('INSERT INTO produto_imagens (produto_id, imagem_url, ordem) VALUES (?, ?, ?)', [data.id, img.url, img.ordem]);
     }
-
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Erro ao atualizar' }, { status: 500 });
@@ -78,17 +71,9 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-
-    if (!id) return NextResponse.json({ error: 'ID não informado' }, { status: 400 });
-
-    await pool.execute('DELETE FROM produto_imagens WHERE produto_id = ?', [id]);
-    await pool.execute('DELETE FROM produtos WHERE id = ?', [id]);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Erro ao excluir' }, { status: 500 });
-  }
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  await pool.execute('DELETE FROM produto_imagens WHERE produto_id = ?', [id]);
+  await pool.execute('DELETE FROM produtos WHERE id = ?', [id]);
+  return NextResponse.json({ success: true });
 }

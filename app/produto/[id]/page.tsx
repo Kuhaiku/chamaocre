@@ -93,7 +93,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
       name: produto.name,
       price: Number(produto.price),
       image: produto.image,
-      weight: produto.weight,
+      peso_comercial: produto.peso_comercial,
       estoque: estoqueDisponivel,
       quantity: quantidade
     });
@@ -229,7 +229,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
                 <span className="flex items-center gap-2 text-[10px] text-stone-400 uppercase tracking-widest mb-2">
                   <Scale size={14}/> Peso
                 </span>
-                <span className="text-sm font-medium text-stone-200">{produto.weight}</span>
+                <span className="text-sm font-medium text-stone-200">{produto.peso_comercial}</span>
               </div>
             </div>
 

@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { Navbar } from '@/components/navbar'
 import { useAuthStore } from '@/lib/auth-store'
-import { Loader2, Package, Truck, Save, MapPin, Settings, FileText, CheckCircle2, ShoppingBag, Plus, Trash, Edit2, X, Image as ImageIcon } from 'lucide-react'
+import { Loader2, Package, Truck, Save, MapPin, Settings, CheckCircle2, ShoppingBag } from 'lucide-react'
+
+// IMPORTAÇÃO DO NOVO COMPONENTE DE PRODUTOS
+import { ProdutosTab } from '@/components/admin/produtos-tab'
 
 const EMAIL_ADMIN = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
-const PRODUTO_INICIAL = {
-  id: '', name: '', line: '', notes: '', feeling: '', historia: '', price: '', image: '', tag: '', tagColor: '#C87A2C', burnTime: '', weight: '', altura: '', largura: '', comprimento: '', estoque: 0
-}
 
 export default function AdminPage() {
   const router = useRouter()
@@ -33,14 +31,6 @@ export default function AdminPage() {
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [salvandoConfig, setSalvandoConfig] = useState(false)
 
-  // Estados de Produtos
-  const [produtos, setProdutos] = useState<any[]>([])
-  const [loadingProdutos, setLoadingProdutos] = useState(true)
-  const [produtoEditando, setProdutoEditando] = useState<any>(null)
-  const [isFormAberto, setIsFormAberto] = useState(false)
-  const [formTab, setFormTab] = useState<'basico' | 'textos' | 'frete'>('basico')
-  const [salvandoProduto, setSalvandoProduto] = useState(false)
-
   useEffect(() => {
     setIsMounted(true)
     if (user && user.email !== EMAIL_ADMIN) {
@@ -49,11 +39,9 @@ export default function AdminPage() {
       fetchPedidos()
       fetchConfiguracoes()
       fetchServicosMelhorEnvio()
-      fetchProdutos()
     }
   }, [user, router])
 
-  // ================== FETCHS ==================
   const fetchPedidos = async () => {
     setLoadingPedidos(true)
     try {
@@ -84,17 +72,6 @@ export default function AdminPage() {
     finally { setLoadingConfig(false) }
   }
 
-  const fetchProdutos = async () => {
-    setLoadingProdutos(true)
-    try {
-      const res = await fetch('/api/admin/produtos')
-      const data = await res.json()
-      if (res.ok) setProdutos(data.produtos || [])
-    } catch (error) { console.error("Erro ao buscar produtos") } 
-    finally { setLoadingProdutos(false) }
-  }
-
-  // ================== HANDLERS CONFIG ==================
   const handleToggleTransportadora = (nome: string) => {
     setTransportadorasAtivas(prev => prev.includes(nome) ? prev.filter(t => t !== nome) : [...prev, nome])
   }
@@ -112,7 +89,6 @@ export default function AdminPage() {
     finally { setSalvandoConfig(false) }
   }
 
-  // ================== HANDLERS PEDIDOS ==================
   const handleUpdatePedido = async (id: number, novoStatus: string, novoRastreio: string) => {
     setSalvandoId(id)
     try {
@@ -127,40 +103,6 @@ export default function AdminPage() {
       } else { alert('Erro ao atualizar o pedido.') }
     } catch (error) { alert('Erro de conexão.') } 
     finally { setSalvandoId(null) }
-  }
-
-  // ================== HANDLERS PRODUTOS ==================
-  const handleAbrirFormulario = (produto: any = null) => {
-    // Merge seguro para garantir que NENHUM campo venha undefined
-    setProdutoEditando(produto ? { ...PRODUTO_INICIAL, ...produto } : { ...PRODUTO_INICIAL })
-    setFormTab('basico')
-    setIsFormAberto(true)
-  }
-
-  const handleSalvarProduto = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSalvandoProduto(true)
-    try {
-      const isEdit = !!produtoEditando.id
-      const res = await fetch('/api/admin/produtos', {
-        method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(produtoEditando)
-      })
-      if (res.ok) {
-        fetchProdutos()
-        setIsFormAberto(false)
-      } else { alert('Erro ao salvar produto.') }
-    } catch (error) { alert('Erro de conexão.') } 
-    finally { setSalvandoProduto(false) }
-  }
-
-  const handleExcluirProduto = async (id: number) => {
-    if (!confirm('Tem certeza que deseja excluir este produto?')) return
-    try {
-      const res = await fetch(`/api/admin/produtos?id=${id}`, { method: 'DELETE' })
-      if (res.ok) setProdutos(produtos.filter(p => p.id !== id))
-    } catch (error) { alert('Erro ao excluir.') }
   }
 
   if (!isMounted || !user || user.email !== EMAIL_ADMIN) {
@@ -193,7 +135,7 @@ export default function AdminPage() {
         {/* Área Principal */}
         <div className="flex-1 relative">
           
-          {/* ================= ABA PEDIDOS ================= */}
+          {/* ABA PEDIDOS */}
           {abaAtiva === 'pedidos' && (
             <div className="animate-fade-in">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -227,62 +169,10 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* ================= ABA PRODUTOS ================= */}
-          {abaAtiva === 'produtos' && (
-            <div className="animate-fade-in">
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                <div>
-                  <h1 className="text-3xl font-heading text-stone-900">Seus Produtos</h1>
-                  <p className="text-stone-500 text-sm mt-1">Gerencie o estoque e crie novos itens.</p>
-                </div>
-                <button onClick={() => handleAbrirFormulario()} className="px-6 py-3 bg-[#C87A2C] hover:bg-[#E59400] text-white rounded-lg tracking-widest uppercase text-xs font-bold transition-all shadow-md outline-none flex items-center justify-center gap-2">
-                  <Plus size={16} /> Novo Produto
-                </button>
-              </div>
+          {/* ABA PRODUTOS (Carrega o Componente Separado) */}
+          {abaAtiva === 'produtos' && <ProdutosTab />}
 
-              {loadingProdutos ? (
-                <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-[#C87A2C]" /></div>
-              ) : produtos.length === 0 ? (
-                <div className="bg-white p-10 text-center rounded-xl border border-stone-200 shadow-sm">
-                  <ShoppingBag className="w-16 h-16 text-stone-200 mx-auto mb-4" />
-                  <h3 className="text-xl font-heading text-stone-900">Nenhum produto cadastrado.</h3>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {produtos.map(p => (
-                    <div key={p.id} className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden flex flex-col group hover:shadow-md transition-shadow">
-                      <div className="aspect-square relative bg-stone-100 overflow-hidden">
-                        {p.image ? (
-                          <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-stone-300"><ImageIcon size={48} strokeWidth={1} /></div>
-                        )}
-                        <div className="absolute top-3 right-3 flex gap-2">
-                          <button onClick={() => handleAbrirFormulario(p)} className="p-2.5 bg-white/90 backdrop-blur-sm text-stone-700 hover:text-[#C87A2C] rounded-full shadow-sm transition-colors"><Edit2 size={16} /></button>
-                          <button onClick={() => handleExcluirProduto(p.id)} className="p-2.5 bg-white/90 backdrop-blur-sm text-red-500 hover:text-red-700 rounded-full shadow-sm transition-colors"><Trash size={16} /></button>
-                        </div>
-                      </div>
-                      <div className="p-5 flex flex-col flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] text-stone-400 uppercase tracking-widest">{p.line || 'Sem Linha'}</span>
-                          <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-sm" style={{ backgroundColor: `${p.tagColor}15`, color: p.tagColor }}>{p.tag || 'Sem Tag'}</span>
-                        </div>
-                        <h3 className="font-heading text-lg text-stone-900 mb-3 leading-tight">{p.name}</h3>
-                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-stone-100">
-                          <span className="font-bold text-stone-900">R$ {Number(p.price).toFixed(2).replace('.', ',')}</span>
-                          <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-1 rounded-md ${p.estoque > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {p.estoque > 0 ? `${p.estoque} un` : 'Esgotado'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ================= ABA CONFIGURAÇÕES ================= */}
+          {/* ABA CONFIGURAÇÕES */}
           {abaAtiva === 'configuracoes' && (
             <div className="bg-white p-8 rounded-xl border border-stone-200 shadow-sm animate-fade-in max-w-2xl">
               <h2 className="text-2xl font-heading text-stone-900 mb-6">Configurações da Loja</h2>
@@ -335,148 +225,6 @@ export default function AdminPage() {
 
         </div>
       </main>
-
-      {/* ================= MODAL PROFISSIONAL DE PRODUTOS ================= */}
-      {isFormAberto && produtoEditando && (
-        <div 
-          className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4 sm:p-6 transition-opacity" 
-          onClick={(e) => { if (e.target === e.currentTarget) setIsFormAberto(false) }}
-        >
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-fade-in relative overflow-hidden">
-            
-            {/* Header Modal */}
-            <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between bg-white z-10 shrink-0">
-              <div>
-                <h2 className="text-2xl font-heading text-stone-900">{produtoEditando.id ? 'Editar Produto' : 'Novo Produto'}</h2>
-                <p className="text-xs text-stone-500 mt-1">Preencha as informações do produto abaixo.</p>
-              </div>
-              <button onClick={() => setIsFormAberto(false)} className="p-2 bg-stone-50 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors outline-none"><X size={20} /></button>
-            </div>
-
-            {/* Abas do Formulário (Scrollável Mobile) */}
-            <div className="flex border-b border-stone-100 px-6 bg-stone-50 shrink-0 overflow-x-auto hide-scrollbar">
-               <button type="button" onClick={(e) => { e.preventDefault(); setFormTab('basico'); }} className={`py-4 px-6 text-[10px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 transition-colors outline-none ${formTab === 'basico' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-400 hover:text-stone-600'}`}>Dados Básicos</button>
-               <button type="button" onClick={(e) => { e.preventDefault(); setFormTab('textos'); }} className={`py-4 px-6 text-[10px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 transition-colors outline-none ${formTab === 'textos' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-400 hover:text-stone-600'}`}>Conteúdo</button>
-               <button type="button" onClick={(e) => { e.preventDefault(); setFormTab('frete'); }} className={`py-4 px-6 text-[10px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 transition-colors outline-none ${formTab === 'frete' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-400 hover:text-stone-600'}`}>Logística</button>
-            </div>
-
-            {/* Corpo do Formulário */}
-            <form id="form-produto" onSubmit={handleSalvarProduto} className="flex-1 overflow-y-auto p-6 bg-white">
-              
-              {formTab === 'basico' && (
-                <div className="space-y-5 animate-fade-in">
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Nome do Produto *</label>
-                    <input required type="text" value={produtoEditando.name} onChange={(e) => setProdutoEditando({...produtoEditando, name: e.target.value})} className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Preço (R$) *</label>
-                      <input required type="number" step="0.01" value={produtoEditando.price} onChange={(e) => setProdutoEditando({...produtoEditando, price: e.target.value})} className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Estoque *</label>
-                      <input required type="number" value={produtoEditando.estoque} onChange={(e) => setProdutoEditando({...produtoEditando, estoque: Number(e.target.value)})} className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">URL da Imagem</label>
-                    <div className="flex gap-3">
-                      <input type="text" value={produtoEditando.image} onChange={(e) => setProdutoEditando({...produtoEditando, image: e.target.value})} placeholder="/produtos/imagem.jpg" className="flex-1 px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                      {produtoEditando.image && (
-                        <div className="w-12 h-12 relative rounded-lg border border-stone-200 overflow-hidden flex-shrink-0 bg-stone-100">
-                          <Image src={produtoEditando.image} alt="Preview" fill className="object-cover" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2">
-                    <div className="sm:col-span-1">
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Linha / Coleção</label>
-                      <input type="text" value={produtoEditando.line} onChange={(e) => setProdutoEditando({...produtoEditando, line: e.target.value})} placeholder="Ex: Clássica" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Tag Visual</label>
-                      <input type="text" value={produtoEditando.tag} onChange={(e) => setProdutoEditando({...produtoEditando, tag: e.target.value})} placeholder="Lançamento" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block flex items-center justify-between">
-                        Cor da Tag 
-                        <span className="w-3 h-3 rounded-full border border-stone-200" style={{ backgroundColor: produtoEditando.tagColor }}></span>
-                      </label>
-                      <input type="color" value={produtoEditando.tagColor} onChange={(e) => setProdutoEditando({...produtoEditando, tagColor: e.target.value})} className="w-full h-[46px] p-1 bg-stone-50 border border-stone-200 rounded-lg cursor-pointer" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {formTab === 'textos' && (
-                <div className="space-y-5 animate-fade-in">
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Tempo de Queima</label>
-                    <input type="text" value={produtoEditando.burnTime} onChange={(e) => setProdutoEditando({...produtoEditando, burnTime: e.target.value})} placeholder="Ex: 30 horas" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Notas Olfativas</label>
-                    <textarea rows={2} value={produtoEditando.notes} onChange={(e) => setProdutoEditando({...produtoEditando, notes: e.target.value})} placeholder="Ex: Topo: Maçã. Corpo: Canela. Fundo: Baunilha." className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all resize-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Sensação (Feeling)</label>
-                    <textarea rows={2} value={produtoEditando.feeling} onChange={(e) => setProdutoEditando({...produtoEditando, feeling: e.target.value})} placeholder="Ex: Aconchego e doçura para dias frios." className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all resize-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">História / Descrição Detalhada</label>
-                    <textarea rows={6} value={produtoEditando.historia} onChange={(e) => setProdutoEditando({...produtoEditando, historia: e.target.value})} placeholder="Conte a história por trás deste aroma..." className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all resize-none" />
-                  </div>
-                </div>
-              )}
-
-              {formTab === 'frete' && (
-                <div className="animate-fade-in">
-                  <div className="mb-6 p-4 bg-[#C87A2C]/5 border border-[#C87A2C]/20 rounded-lg">
-                    <p className="text-sm text-stone-700 font-medium">Medidas de Postagem</p>
-                    <p className="text-xs text-stone-500 mt-1">Estes dados são enviados ao Melhor Envio para o cálculo preciso do frete. Insira os valores do produto já embalado.</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Peso Bruto (Kg) *</label>
-                      <input required type="number" step="0.01" value={produtoEditando.weight} onChange={(e) => setProdutoEditando({...produtoEditando, weight: e.target.value})} placeholder="Ex: 0.5" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Altura (cm) *</label>
-                      <input required type="number" value={produtoEditando.altura} onChange={(e) => setProdutoEditando({...produtoEditando, altura: e.target.value})} placeholder="Ex: 15" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Largura (cm) *</label>
-                      <input required type="number" value={produtoEditando.largura} onChange={(e) => setProdutoEditando({...produtoEditando, largura: e.target.value})} placeholder="Ex: 15" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-2 block">Comprimento (cm) *</label>
-                      <input required type="number" value={produtoEditando.comprimento} onChange={(e) => setProdutoEditando({...produtoEditando, comprimento: e.target.value})} placeholder="Ex: 15" className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#C87A2C]/20 focus:border-[#C87A2C] transition-all" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            </form>
-
-            {/* Footer Modal */}
-            <div className="p-5 border-t border-stone-100 bg-stone-50 flex justify-end gap-3 shrink-0">
-               <button type="button" onClick={() => setIsFormAberto(false)} className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-stone-500 hover:bg-stone-200 rounded-lg transition-colors outline-none">Cancelar</button>
-               <button type="submit" form="form-produto" disabled={salvandoProduto} className="px-8 py-3 bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center gap-2 shadow-md outline-none">
-                 {salvandoProduto ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                 {produtoEditando.id ? 'Salvar Edição' : 'Criar Produto'}
-               </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </div>
   )
 }
@@ -540,7 +288,7 @@ function PedidoCard({ pedido, onSave, salvandoId }: { pedido: any, onSave: any, 
       <div className="p-6 lg:w-1/3 flex flex-col justify-center space-y-4 relative">
         {pedido.status === 'pago' && !pedido.codigo_rastreio && (
           <button onClick={handleGerarEtiqueta} disabled={gerandoEtiqueta} className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg tracking-widest uppercase text-[10px] font-bold transition-all shadow-sm outline-none flex items-center justify-center gap-2 mb-2">
-            {gerandoEtiqueta ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Comprar e Gerar Etiqueta
+            {gerandoEtiqueta ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />} Comprar e Gerar Etiqueta
           </button>
         )}
 

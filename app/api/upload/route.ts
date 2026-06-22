@@ -7,6 +7,7 @@ export async function POST(request: Request) {
   try {
     const data = await request.formData();
     const file: File | null = data.get('file') as unknown as File;
+    const folder: string = data.get('folder') as string || 'geral'; // Pega o nome da pasta enviado
 
     if (!file) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
@@ -19,8 +20,10 @@ export async function POST(request: Request) {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const filename = `${uniqueSuffix}-${file.name.replace(/\s+/g, '-')}`;
     
-    // Garante que a pasta public/uploads existe
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // Caminho correto: public/produtos/nome-do-produto/
+    const uploadDir = path.join(process.cwd(), 'public', 'produtos', folder);
+    
+    // Cria a pasta do produto se ela não existir
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -28,8 +31,8 @@ export async function POST(request: Request) {
     const filepath = path.join(uploadDir, filename);
     await writeFile(filepath, buffer);
 
-    // Retorna a URL pública da imagem salva
-    return NextResponse.json({ success: true, url: `/uploads/${filename}` });
+    // Retorna a URL correta e organizada
+    return NextResponse.json({ success: true, url: `/produtos/${folder}/${filename}` });
   } catch (error) {
     console.error('Erro no upload:', error);
     return NextResponse.json({ error: 'Falha no upload da imagem.' }, { status: 500 });

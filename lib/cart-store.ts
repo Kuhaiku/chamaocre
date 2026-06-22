@@ -6,9 +6,9 @@ export interface CartItem {
   name: string
   price: number
   image: string
-  weight: string
   quantity: number
   estoque: number
+ peso_comercial?: string;
 }
 
 interface CartStore {
