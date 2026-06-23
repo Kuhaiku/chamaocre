@@ -10,7 +10,7 @@ const PRODUTO_INICIAL = {
 export function ProdutosTab() {
   const [produtos, setProdutos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  
+
   const [isFormAberto, setIsFormAberto] = useState(false)
   const [produtoEditando, setProdutoEditando] = useState<any>(null)
   const [imagens, setImagens] = useState<{ id?: number, url: string, file?: File, ordem: number }[]>([])
@@ -27,14 +27,14 @@ export function ProdutosTab() {
       const res = await fetch('/api/admin/produtos')
       const data = await res.json()
       if (res.ok) setProdutos(data.produtos || [])
-    } catch (error) { console.error(error) } 
+    } catch (error) { console.error(error) }
     finally { setLoading(false) }
   }
 
   const handleAbrirFormulario = (produto: any = null) => {
     if (produto) {
       setProdutoEditando({ ...PRODUTO_INICIAL, ...produto })
-      
+
       if ((!produto.imagens || produto.imagens.length === 0) && produto.image) {
         setImagens([{ url: produto.image, ordem: 0 }])
       } else {
@@ -74,7 +74,7 @@ export function ProdutosTab() {
     const novasImagens = [...imagens]
     const [draggedImage] = novasImagens.splice(dragIndex, 1)
     novasImagens.splice(dropIndex, 0, draggedImage)
-    
+
     setImagens(novasImagens.map((img, idx) => ({ ...img, ordem: idx })))
   }
 
@@ -86,9 +86,9 @@ export function ProdutosTab() {
       const folderName = (produtoEditando.name || 'novo-produto')
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") 
-        .replace(/[^a-z0-9]+/g, "-")     
-        .replace(/(^-|-$)+/g, "");       
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
 
       const imagensParaSalvar = await Promise.all(imagens.map(async (img) => {
         if (img.file) {
@@ -121,7 +121,7 @@ export function ProdutosTab() {
         fetchProdutos()
         setIsFormAberto(false)
       } else { alert('Erro ao salvar produto.') }
-    } catch (error) { alert('Erro ao processar dados.') } 
+    } catch (error) { alert('Erro ao processar dados.') }
     finally { setSalvando(false) }
   }
 
@@ -177,8 +177,8 @@ export function ProdutosTab() {
                 </div>
               </div>
               <div className="p-2 border-t border-stone-100 bg-stone-50 flex gap-2">
-                <button onClick={() => handleAbrirFormulario(p)} className="flex-1 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-700 text-[10px] font-bold uppercase tracking-widest rounded transition-colors flex items-center justify-center gap-1"><Edit2 size={12}/> Editar</button>
-                <button onClick={() => handleExcluir(p.id)} className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded transition-colors flex items-center justify-center"><Trash size={14}/></button>
+                <button onClick={() => handleAbrirFormulario(p)} className="flex-1 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-700 text-[10px] font-bold uppercase tracking-widest rounded transition-colors flex items-center justify-center gap-1"><Edit2 size={12} /> Editar</button>
+                <button onClick={() => handleExcluir(p.id)} className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded transition-colors flex items-center justify-center"><Trash size={14} /></button>
               </div>
             </div>
           ))}
@@ -187,40 +187,40 @@ export function ProdutosTab() {
 
       {isFormAberto && produtoEditando && (
         <div className="fixed inset-0 bg-stone-900/80 backdrop-blur-sm z-[80] flex items-center justify-center p-2 sm:p-4" onClick={(e) => { if (e.target === e.currentTarget) setIsFormAberto(false) }}>
-          
+
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col relative overflow-hidden">
-            
+
             <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between bg-white shrink-0">
               <h2 className="text-xl font-heading text-stone-900">{produtoEditando.id ? 'Editar Produto' : 'Novo Produto'}</h2>
               <button onClick={() => setIsFormAberto(false)} className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors outline-none"><X size={20} /></button>
             </div>
 
             <div className="flex border-b border-stone-200 px-5 bg-stone-50 shrink-0 overflow-x-auto hide-scrollbar">
-               <button type="button" onClick={() => setFormTab('basico')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'basico' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>1. Básico & Imagens</button>
-               <button type="button" onClick={() => setFormTab('textos')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'textos' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>2. Textos & Tags</button>
-               <button type="button" onClick={() => setFormTab('frete')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'frete' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>3. Logística</button>
+              <button type="button" onClick={() => setFormTab('basico')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'basico' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>1. Básico & Imagens</button>
+              <button type="button" onClick={() => setFormTab('textos')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'textos' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>2. Textos & Tags</button>
+              <button type="button" onClick={() => setFormTab('frete')} className={`py-3 px-4 text-[11px] whitespace-nowrap font-bold tracking-widest uppercase border-b-2 outline-none ${formTab === 'frete' ? 'border-[#C87A2C] text-[#C87A2C]' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>3. Logística</button>
             </div>
 
             <form id="form-produto" onSubmit={handleSalvarProduto} className="flex-1 overflow-y-auto p-5 sm:p-6 bg-white min-h-0">
-              
+
               {formTab === 'basico' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
                       <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Nome do Produto *</label>
-                      <input required type="text" value={produtoEditando.name} onChange={(e) => setProdutoEditando({...produtoEditando, name: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      <input required type="text" value={produtoEditando.name} onChange={(e) => setProdutoEditando({ ...produtoEditando, name: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Preço (R$)</label>
-                      <input required type="number" step="0.01" value={produtoEditando.price} onChange={(e) => setProdutoEditando({...produtoEditando, price: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      <input required type="number" step="0.01" value={produtoEditando.price} onChange={(e) => setProdutoEditando({ ...produtoEditando, price: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Qtd em Estoque</label>
-                      <input required type="number" value={produtoEditando.estoque} onChange={(e) => setProdutoEditando({...produtoEditando, estoque: Number(e.target.value)})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      <input required type="number" value={produtoEditando.estoque} onChange={(e) => setProdutoEditando({ ...produtoEditando, estoque: Number(e.target.value) })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Peso Comercial (Visível ao Cliente)</label>
-                      <input type="text" value={produtoEditando.peso_comercial || ''} onChange={(e) => setProdutoEditando({...produtoEditando, peso_comercial: e.target.value})} placeholder="Ex: 50g ou 250g" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] outline-none" />
+                      <input type="text" value={produtoEditando.peso_comercial || ''} onChange={(e) => setProdutoEditando({ ...produtoEditando, peso_comercial: e.target.value })} placeholder="Ex: 50g ou 250g" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] outline-none" />
                     </div>
                   </div>
 
@@ -239,28 +239,28 @@ export function ProdutosTab() {
                     <div className="flex flex-wrap gap-2 mt-4">
                       {imagens.map((img, idx) => (
                         <div key={idx} draggable onDragStart={(e) => handleDragStart(e, idx)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, idx)} className={`relative w-20 h-20 shrink-0 rounded-sm border-2 overflow-hidden bg-white cursor-grab active:cursor-grabbing group ${idx === 0 ? 'border-[#C87A2C]' : 'border-stone-200'}`}>
-                          
+
                           {img.url && typeof img.url === 'string' && img.url.trim() !== '' ? (
                             <img src={img.url} alt={`img-${idx}`} className="w-full h-full object-cover absolute inset-0" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-300"><ImageIcon size={16} /></div>
                           )}
-                          
+
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                            <button type="button" onClick={() => handleRemoveImage(idx)} className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 outline-none"><Trash size={12}/></button>
+                            <button type="button" onClick={() => handleRemoveImage(idx)} className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 outline-none"><Trash size={12} /></button>
                           </div>
-                          
+
                           {idx === 0 && <span className="absolute bottom-0 left-0 w-full bg-[#C87A2C] text-white text-[7px] font-bold text-center py-[2px] uppercase tracking-widest z-10 leading-none">Capa</span>}
                         </div>
                       ))}
                     </div>
                     {imagens.length === 0 && (
-                        <div className="w-full mt-3 py-6 border-2 border-dashed border-stone-300 rounded-md flex flex-col items-center justify-center text-stone-400">
-                          <ImageIcon size={24} className="mb-2 opacity-50" />
-                          <span className="text-[10px] uppercase tracking-widest">Nenhuma foto</span>
-                        </div>
+                      <div className="w-full mt-3 py-6 border-2 border-dashed border-stone-300 rounded-md flex flex-col items-center justify-center text-stone-400">
+                        <ImageIcon size={24} className="mb-2 opacity-50" />
+                        <span className="text-[10px] uppercase tracking-widest">Nenhuma foto</span>
+                      </div>
                     )}
-                    
+
                   </div>
                 </div>
               )}
@@ -272,37 +272,35 @@ export function ProdutosTab() {
                     <div className="space-y-4">
                       <div>
                         <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Linha / Coleção</label>
-                        <input type="text" value={produtoEditando.line} onChange={(e) => setProdutoEditando({...produtoEditando, line: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Etiqueta (Tag)</label>
-                        <input type="text" value={produtoEditando.tag} onChange={(e) => setProdutoEditando({...produtoEditando, tag: e.target.value})} placeholder="Ex: Novo" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                        <input type="text" value={produtoEditando.line} onChange={(e) => setProdutoEditando({ ...produtoEditando, line: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Cor da Tag</label>
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="color" 
-                            value={produtoEditando.tagColor || '#C87A2C'} 
-                            onChange={(e) => setProdutoEditando({...produtoEditando, tagColor: e.target.value})} 
-                            className="w-11 h-11 p-1 bg-white border border-stone-300 rounded-md cursor-pointer shrink-0" 
-                          />
-                          <input 
-                            type="text" 
-                            value={produtoEditando.tagColor} 
-                            onChange={(e) => setProdutoEditando({...produtoEditando, tagColor: e.target.value})} 
-                            placeholder="#C87A2C" 
-                            maxLength={7}
-                            className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none uppercase" 
-                          />
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Etiqueta (Tag)</label>
+                        <input type="text" value={produtoEditando.tag} onChange={(e) => setProdutoEditando({ ...produtoEditando, tag: e.target.value })} placeholder="Ex: Novo" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      </div>
+
+                      <div>
+
+                        <div className="space-y-2 md:col-span-2">
+                          <label htmlFor="tagColor" className="text-sm font-medium text-stone-700">Cor da Tag</label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              id="tagColor"
+                              name="tagColor"
+                              type="text"
+                              value={produtoEditando?.tagColor || ''}
+                              onChange={(e) => setProdutoEditando({ ...produtoEditando, tagColor: e.target.value })}
+                              placeholder="Ex: bg-[#C87A2C] text-white"
+                              className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 focus:ring-2 focus:ring-amber-600 outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
 
                       <div>
                         <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Tempo de Queima</label>
-                        <input type="text" value={produtoEditando.burnTime} onChange={(e) => setProdutoEditando({...produtoEditando, burnTime: e.target.value})} placeholder="Ex: 30 horas" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                        <input type="text" value={produtoEditando.burnTime} onChange={(e) => setProdutoEditando({ ...produtoEditando, burnTime: e.target.value })} placeholder="Ex: 30 horas" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                       </div>
                     </div>
 
@@ -310,12 +308,12 @@ export function ProdutosTab() {
                     <div className="space-y-4">
                       <div>
                         <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Notas Olfativas</label>
-                        <textarea rows={3} value={produtoEditando.notes} onChange={(e) => setProdutoEditando({...produtoEditando, notes: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
+                        <textarea rows={3} value={produtoEditando.notes} onChange={(e) => setProdutoEditando({ ...produtoEditando, notes: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
                       </div>
-                      
+
                       <div>
                         <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Sensação (Feeling)</label>
-                        <textarea rows={4} value={produtoEditando.feeling} onChange={(e) => setProdutoEditando({...produtoEditando, feeling: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
+                        <textarea rows={4} value={produtoEditando.feeling} onChange={(e) => setProdutoEditando({ ...produtoEditando, feeling: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
                       </div>
                     </div>
                   </div>
@@ -323,7 +321,7 @@ export function ProdutosTab() {
                   {/* Linha Inteira na parte inferior */}
                   <div className="mt-4">
                     <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">História Detalhada</label>
-                    <textarea rows={4} value={produtoEditando.historia} onChange={(e) => setProdutoEditando({...produtoEditando, historia: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
+                    <textarea rows={4} value={produtoEditando.historia} onChange={(e) => setProdutoEditando({ ...produtoEditando, historia: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
                   </div>
                 </div>
               )}
@@ -332,12 +330,12 @@ export function ProdutosTab() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Peso Bruto Total p/ Frete (g)</label>
-                    <input 
-                      type="number" 
-                      value={produtoEditando.weight ? Math.round(Number(produtoEditando.weight) * 1000) : ''} 
-                      onChange={(e) => setProdutoEditando({...produtoEditando, weight: parseFloat(e.target.value) / 1000})} 
-                      placeholder="Ex: 300 (para 300g totais)" 
-                      className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 outline-none" 
+                    <input
+                      type="number"
+                      value={produtoEditando.weight ? Math.round(Number(produtoEditando.weight) * 1000) : ''}
+                      onChange={(e) => setProdutoEditando({ ...produtoEditando, weight: parseFloat(e.target.value) / 1000 })}
+                      placeholder="Ex: 300 (para 300g totais)"
+                      className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 outline-none"
                     />
                   </div>
                   <div>
@@ -345,21 +343,21 @@ export function ProdutosTab() {
                       Altura
                       <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">Centímetros (cm)</span>
                     </label>
-                    <input required type="number" value={produtoEditando.altura} onChange={(e) => setProdutoEditando({...produtoEditando, altura: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                    <input required type="number" value={produtoEditando.altura} onChange={(e) => setProdutoEditando({ ...produtoEditando, altura: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 flex items-center justify-between">
                       Largura
                       <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">Centímetros (cm)</span>
                     </label>
-                    <input required type="number" value={produtoEditando.largura} onChange={(e) => setProdutoEditando({...produtoEditando, largura: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                    <input required type="number" value={produtoEditando.largura} onChange={(e) => setProdutoEditando({ ...produtoEditando, largura: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 flex items-center justify-between">
                       Comprimento
                       <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">Centímetros (cm)</span>
                     </label>
-                    <input required type="number" value={produtoEditando.comprimento} onChange={(e) => setProdutoEditando({...produtoEditando, comprimento: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                    <input required type="number" value={produtoEditando.comprimento} onChange={(e) => setProdutoEditando({ ...produtoEditando, comprimento: e.target.value })} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
                   </div>
                 </div>
               )}
@@ -367,11 +365,11 @@ export function ProdutosTab() {
             </form>
 
             <div className="p-4 border-t border-stone-200 bg-stone-50 flex justify-end gap-3 shrink-0">
-               <button type="button" onClick={() => setIsFormAberto(false)} className="px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-600 bg-white border border-stone-300 hover:bg-stone-100 rounded-md transition-colors outline-none">Cancelar</button>
-               <button type="submit" form="form-produto" disabled={salvando} className="px-6 py-2.5 bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs font-bold uppercase tracking-widest rounded-md transition-colors flex items-center gap-2 shadow-sm outline-none">
-                 {salvando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                 {produtoEditando.id ? 'Salvar Alterações' : 'Criar Produto'}
-               </button>
+              <button type="button" onClick={() => setIsFormAberto(false)} className="px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-600 bg-white border border-stone-300 hover:bg-stone-100 rounded-md transition-colors outline-none">Cancelar</button>
+              <button type="submit" form="form-produto" disabled={salvando} className="px-6 py-2.5 bg-[#C87A2C] hover:bg-[#E59400] text-white text-xs font-bold uppercase tracking-widest rounded-md transition-colors flex items-center gap-2 shadow-sm outline-none">
+                {salvando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {produtoEditando.id ? 'Salvar Alterações' : 'Criar Produto'}
+              </button>
             </div>
 
           </div>

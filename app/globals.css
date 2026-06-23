@@ -2,6 +2,11 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+/* Força a compilação das cores de 100 a 900 para bg e text */
+@source inline("{bg,text}-{green,red,blue,yellow,amber,emerald,teal,cyan,indigo,violet,purple,pink,rose,orange}-{100..900..100}");
+
+@custom-variant dark (&:is(.dark *));
+/* ... restante código ... */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

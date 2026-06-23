@@ -79,7 +79,7 @@ export function ProductsSection() {
       price: Number(product.price),
       image: product.image,
       peso_comercial: product.peso_comercial,
-      estoque: number
+      estoque: product.estoque
     })
   }
 
@@ -199,7 +199,7 @@ export function ProductsSection() {
           </div>
         )}
 
-        <div className="text-center mt-16 reveal-prod opacity-0">
+        {/* <div className="text-center mt-16 reveal-prod opacity-0">
           <p className="text-muted-foreground mb-6 text-sm tracking-wide">
             Quer criar um kit personalizado? Entre em contato e montamos a combinação perfeita para você.
           </p>
@@ -211,7 +211,7 @@ export function ProductsSection() {
           >
             Montar Kit Personalizado
           </a>
-        </div>
+        </div> */}
       </div>
     </section>
   )
