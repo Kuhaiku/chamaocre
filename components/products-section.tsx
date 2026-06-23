@@ -21,6 +21,23 @@ interface Product {
   peso_comercial: string;
 }
 
+// Função que calcula a cor do texto com base na cor de fundo do Tailwind
+const obterClassesDaTag = (tagColor?: string | null) => {
+  // Cor padrão (fallback) caso o produto não tenha cor cadastrada
+  if (!tagColor) return 'bg-stone-500 text-white'; 
+
+  // Extrai o peso da cor usando Regex (procura o número na string, ex: "500" em "bg-green-500")
+  const match = tagColor.match(/-(\d+)/);
+  
+  // Se não encontrar número, assume 500 por segurança
+  const peso = match ? parseInt(match[1], 10) : 500; 
+
+  // Se o peso for 500 ou maior, texto branco. Se for menor (mais claro), texto escuro.
+  const corDoTexto = peso >= 500 ? 'text-white' : 'text-stone-900';
+
+  return `${tagColor} ${corDoTexto}`;
+};
+
 export function ProductsSection() {
   const ref = useRef<HTMLElement>(null)
   const [hovered, setHovered] = useState<number | null>(null)
@@ -121,8 +138,9 @@ export function ProductsSection() {
                 onMouseLeave={() => setHovered(null)}
               >
                 
+                {/* Etiqueta dinâmica com a função aplicada */}
                 {product.tag && (
-                  <div className={`absolute top-4 left-4 z-10 ${product.tagColor || 'bg-stone-500'} text-white text-xs tracking-widest uppercase px-3 py-1 rounded-sm`}>
+                  <div className={`absolute top-4 left-4 z-10 text-xs tracking-widest uppercase px-3 py-1 rounded-sm shadow-sm ${obterClassesDaTag(product.tagColor)}`}>
                     {product.tag}
                   </div>
                 )}
@@ -167,11 +185,11 @@ export function ProductsSection() {
                     </div>
                     <div className="w-px bg-border" />
                     {product.peso_comercial && (
-  <div className="text-center">
-    <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Peso</div>
-    <div className="text-sm text-foreground font-medium">{product.peso_comercial}</div>
-  </div>
-)}
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground tracking-wider uppercase mb-0.5">Peso</div>
+                        <div className="text-sm text-foreground font-medium">{product.peso_comercial}</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer - Botões Lado a Lado */}
