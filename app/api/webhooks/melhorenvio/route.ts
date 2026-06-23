@@ -11,21 +11,19 @@ const statusMap: Record<string, string> = {
 
 export async function POST(request: Request) {
   try {
-    // 1. Validação de Segurança
+    // Validação de segurança recomendada:
+    // O Melhor Envio permite configurar um token. Descomente as linhas abaixo se configurar um.
+    /*
     const authHeader = request.headers.get('authorization');
-    const secret = process.env.MELHOR_ENVIO_WEBHOOK_SECRET;
-
-    // Se houver um secret definido no .env, vamos validar a requisição
-    if (secret && authHeader !== `Bearer ${secret}`) {
-      console.error('[Webhook Melhor Envio] Tentativa de acesso não autorizada.');
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    if (authHeader !== `Bearer ${process.env.MELHOR_ENVIO_WEBHOOK_SECRET}`) {
+       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
+    */
 
-    // 2. Leitura do Payload
     const data = await request.json();
 
-    // Melhor Envio costuma enviar campos como 'tracking' ou 'tracking_code'
-    // e o 'status' que indica a movimentação.
+    // A estrutura do payload do Melhor Envio envia o status e o código de rastreio.
+    // Dependendo do evento configurado no painel deles, pode vir no formato abaixo:
     const trackingCode = data.tracking || data.tracking_code; 
     const meStatus = data.status; 
 
@@ -33,11 +31,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payload inválido ou incompleto' }, { status: 400 });
     }
 
-    // 3. Processamento de Atualização
     const novoStatus = statusMap[meStatus];
 
+    // Se o status recebido estiver no nosso mapeamento, atualiza no banco
     if (novoStatus) {
-      // Atualiza o status do pedido no banco de dados baseado no rastreio
       const [result]: any = await pool.execute(
         'UPDATE pedidos SET status = ? WHERE codigo_rastreio = ?',
         [novoStatus, trackingCode]
@@ -48,12 +45,10 @@ export async function POST(request: Request) {
       } else {
         console.log(`[Webhook Melhor Envio] Nenhum pedido encontrado com o rastreio: ${trackingCode}`);
       }
-    } else {
-      console.log(`[Webhook Melhor Envio] Status ignorado: ${meStatus}`);
     }
 
-    // 4. Resposta rápida de sucesso (O Melhor Envio exige um status 200)
-    return NextResponse.json({ success: true }, { status: 200 });
+    // Sempre retorne 200 OK rapidamente para o Melhor Envio saber que você recebeu
+    return NextResponse.json({ success: true });
 
   } catch (error: any) {
     console.error('[Webhook Melhor Envio] Erro interno:', error);

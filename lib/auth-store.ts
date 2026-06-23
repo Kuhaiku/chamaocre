@@ -9,6 +9,7 @@ export interface User {
   nome: string;
   email: string;
   telefone: string;
+  cpf?: string; // <-- ADICIONADO AQUI PARA PARAR O ERRO DO TYPESCRIPT
 }
 
 interface AuthState {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, Edit2, Check, Copy, CheckCircle2, FileText } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useCartStore } from '@/lib/cart-store';
+import { formatarCPF, limparNumeros } from '@/lib/utils'; // <-- IMPORTADO AQUI
 
 const statusMap: Record<string, { label: string, color: string }> = {
   'aguardando_pagamento': { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700 border-orange-200' },
@@ -45,7 +46,8 @@ export function AuthDrawer() {
       }, 300);
     }
     if (user) {
-      setEditData({ nome: user.nome, telefone: user.telefone || '', cpf: user.cpf || '' });
+      // Formata o CPF que vem do banco para exibir bonito na tela de edição
+      setEditData({ nome: user.nome, telefone: user.telefone || '', cpf: formatarCPF(user.cpf || '') });
     }
   }, [isOpen, user, view, setView]);
 
@@ -77,13 +79,21 @@ export function AuthDrawer() {
 
   if (!isMounted) return null;
 
+  // Lógica de máscara no Cadastro
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let value = e.target.value;
+    if (e.target.name === 'cpf') value = formatarCPF(value);
+    
+    setFormData({ ...formData, [e.target.name]: value });
     setErrorMsg('');
   };
 
+  // Lógica de máscara na Edição de Perfil
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditData({ ...editData, [e.target.name]: e.target.value });
+    let value = e.target.value;
+    if (e.target.name === 'cpf') value = formatarCPF(value);
+
+    setEditData({ ...editData, [e.target.name]: value });
     setErrorMsg('');
   };
 
@@ -95,10 +105,11 @@ export function AuthDrawer() {
 
     try {
       let bodyData = {};
+      // Aqui limpamos a máscara antes de enviar para a API!
       if (action === 'login') bodyData = { action, email: formData.email, senha: formData.senha };
-      else if (action === 'register') bodyData = { action, ...formData };
+      else if (action === 'register') bodyData = { action, ...formData, cpf: limparNumeros(formData.cpf) };
       else if (action === 'forgot_password') bodyData = { action, email: formData.email };
-      else if (action === 'update_profile') bodyData = { action, id: user?.id, ...editData };
+      else if (action === 'update_profile') bodyData = { action, id: user?.id, ...editData, cpf: limparNumeros(editData.cpf) };
 
       const res = await fetch('/api/auth', {
         method: 'POST',
@@ -159,7 +170,7 @@ export function AuthDrawer() {
                 <h3 className="font-heading text-xl text-stone-900">{user.nome}</h3>
                 <p className="text-sm text-stone-500 mt-1">{user.email}</p>
                 {user.telefone && <p className="text-xs text-stone-400 mt-1">{user.telefone}</p>}
-                {user.cpf && <p className="text-xs text-stone-400 mt-1">CPF: {user.cpf}</p>}
+                {user.cpf && <p className="text-xs text-stone-400 mt-1">CPF: {formatarCPF(user.cpf)}</p>}
               </div>
 
               <div className="flex-1 p-4 space-y-2">
@@ -201,7 +212,7 @@ export function AuthDrawer() {
                   <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CPF</label>
                   <div className="relative">
                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
-                    <input type="text" name="cpf" value={editData.cpf} onChange={handleEditChange} placeholder="000.000.000-00" className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
+                    <input type="text" name="cpf" value={editData.cpf} onChange={handleEditChange} placeholder="000.000.000-00" maxLength={14} className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
                   </div>
                 </div>
                 <div>
@@ -378,7 +389,7 @@ export function AuthDrawer() {
                       <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CPF</label>
                       <div className="relative">
                         <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
-                        <input required type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#C87A2C] outline-none transition-colors" />
+                        <input required type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} placeholder="000.000.000-00" maxLength={14} className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 placeholder:text-stone-400 focus:border-[#C87A2C] outline-none transition-colors" />
                       </div>
                     </div>
                     <div>

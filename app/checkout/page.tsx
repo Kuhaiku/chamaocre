@@ -10,8 +10,8 @@ import { Footer } from '@/components/footer'
 import { Loader2, ArrowLeft, Truck, CheckCircle2, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { initMercadoPago, Payment } from '@mercadopago/sdk-react'
+import { formatarCPF, limparNumeros } from '@/lib/utils'
 
-// Inicializa o Mercado Pago no lado do cliente
 const publicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
 if (publicKey) {
   initMercadoPago(publicKey, { locale: 'pt-BR' });
@@ -27,7 +27,6 @@ export default function CheckoutPage() {
   const { user } = useAuthStore()
   const [isMounted, setIsMounted] = useState(false)
 
-  // Estados de Endereço, Frete e CPF
   const [cpf, setCpf] = useState('')
   const [cep, setCep] = useState('')
   const [endereco, setEndereco] = useState({ rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' })
@@ -36,7 +35,6 @@ export default function CheckoutPage() {
   const [calculandoFrete, setCalculandoFrete] = useState(false)
   const [freteSelecionado, setFreteSelecionado] = useState<OpcaoFrete | null>(null)
 
-  // Estados de Finalização
   const [pedidoFinalizado, setPedidoFinalizado] = useState(false)
   const [pixData, setPixData] = useState<any>(null)
   const [copiado, setCopiado] = useState(false)
@@ -44,12 +42,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     setIsMounted(true)
     
-    // Auto-preenche o CPF se já estiver no perfil do usuário
     if (user?.cpf && !cpf) {
-      setCpf(user.cpf)
+      setCpf(formatarCPF(user.cpf))
     }
     
-    // Redireciona de volta pra loja se a sacola estiver vazia E o pedido não tiver sido finalizado
     if (!user || (items.length === 0 && !pedidoFinalizado)) {
       router.push('/loja')
     }
@@ -110,9 +106,6 @@ export default function CheckoutPage() {
   const valorFrete = freteSelecionado ? freteSelecionado.preco : 0
   const total = subtotal + valorFrete
 
-  // ==========================================
-  // LÓGICA DE SUBMISSÃO DO BRICK
-  // ==========================================
   const onSubmitPayment = async (param: any) => {
     const formData = param.formData;
 
@@ -122,7 +115,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           usuario_id: user.id,
-          cpf: cpf, // Enviamos o CPF para o back-end
+          cpf: limparNumeros(cpf),
           transportadora_nome: freteSelecionado?.nomeCompleto || `${freteSelecionado?.empresa} ${freteSelecionado?.nome}`,
           transportadora_servico_id: freteSelecionado?.id,
           items, 
@@ -143,7 +136,8 @@ export default function CheckoutPage() {
           clearCart()
           resolve()
         } else {
-          alert('Não foi possível processar o pagamento. Verifique os dados.')
+          // EXIBE O ERRO QUE VOLTAR DA API (Ex: O produto esgotou em estoque)
+          alert(data.error || 'Não foi possível processar o pagamento. Verifique os dados.')
           reject()
         }
       })
@@ -154,9 +148,6 @@ export default function CheckoutPage() {
     })
   }
 
-  // ==========================================
-  // TELA FINAL: SUCESSO OU PIX
-  // ==========================================
   if (pedidoFinalizado) {
     return (
       <div className="min-h-screen flex flex-col bg-stone-50 font-sans">
@@ -199,9 +190,6 @@ export default function CheckoutPage() {
     )
   }
 
-  // ==========================================
-  // TELA DE CHECKOUT NORMAL
-  // ==========================================
   return (
     <div className="min-h-screen flex flex-col bg-stone-50 font-sans">
       <Navbar forceSolid />
@@ -216,7 +204,6 @@ export default function CheckoutPage() {
         <div className="flex flex-col lg:flex-row gap-10">
           <div className="flex-1 space-y-8">
             
-            {/* ETAPA 1: Endereço e CPF */}
             <section className="bg-white p-6 md:p-8 border border-stone-200 rounded-sm shadow-sm">
               <h2 className="text-sm font-bold tracking-widest uppercase text-stone-900 mb-6 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-[#C87A2C] text-white flex items-center justify-center text-xs">1</span>
@@ -226,7 +213,7 @@ export default function CheckoutPage() {
                 
                 <div className="md:col-span-2">
                   <label className="text-xs font-medium text-stone-700 uppercase tracking-widest mb-1.5 block">CPF (Obrigatório para o envio)</label>
-                  <input type="text" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" maxLength={14} className="w-full md:w-1/2 px-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
+                  <input type="text" value={cpf} onChange={(e) => setCpf(formatarCPF(e.target.value))} placeholder="000.000.000-00" maxLength={14} className="w-full md:w-1/2 px-4 py-3 bg-stone-50 border border-stone-200 rounded-sm text-sm text-stone-900 focus:border-[#C87A2C] outline-none transition-colors" />
                 </div>
 
                 <div className="md:col-span-2 relative mt-2">
@@ -260,7 +247,6 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* ETAPA 2: Frete */}
             <section className="bg-white p-6 md:p-8 border border-stone-200 rounded-sm shadow-sm">
               <h2 className="text-sm font-bold tracking-widest uppercase text-stone-900 mb-6 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-[#C87A2C] text-white flex items-center justify-center text-xs">2</span>
@@ -274,7 +260,11 @@ export default function CheckoutPage() {
               ) : opcoesFrete.length > 0 ? (
                 <div className="space-y-3">
                   {opcoesFrete.map((frete) => (
-                    <label key={frete.id} className={`flex items-center justify-between p-4 border rounded-sm cursor-pointer transition-colors ${freteSelecionado?.id === frete.id ? 'border-[#C87A2C] bg-[#C87A2C]/5' : 'border-stone-200 hover:border-stone-300 bg-stone-50'}`}>
+                    <label 
+                      key={frete.id} 
+                      onClick={() => setFreteSelecionado(frete)}
+                      className={`flex items-center justify-between p-4 border rounded-sm cursor-pointer transition-colors ${freteSelecionado?.id === frete.id ? 'border-[#C87A2C] bg-[#C87A2C]/5' : 'border-stone-200 hover:border-stone-300 bg-stone-50'}`}
+                    >
                       <div className="flex items-center gap-4">
                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${freteSelecionado?.id === frete.id ? 'border-[#C87A2C]' : 'border-stone-300'}`}>
                           {freteSelecionado?.id === frete.id && <div className="w-2.5 h-2.5 rounded-full bg-[#C87A2C]" />}
@@ -296,7 +286,6 @@ export default function CheckoutPage() {
               )}
             </section>
 
-            {/* ETAPA 3: Pagamento (Renderiza apenas se CPF, frete e número da casa existirem) */}
             {freteSelecionado && endereco.numero && cpf && (
               <section className="bg-white p-6 md:p-8 border border-stone-200 rounded-sm shadow-sm animate-fade-in">
                 <h2 className="text-sm font-bold tracking-widest uppercase text-stone-900 mb-6 flex items-center gap-2">
@@ -329,7 +318,6 @@ export default function CheckoutPage() {
 
           </div>
 
-          {/* Resumo da Compra */}
           <aside className="w-full lg:w-[400px] flex-shrink-0">
             <div className="bg-white p-6 border border-stone-200 rounded-sm shadow-sm sticky top-32">
               <h2 className="text-lg font-heading text-stone-900 mb-6">Resumo do Pedido</h2>
