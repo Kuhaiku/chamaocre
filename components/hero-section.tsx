@@ -147,14 +147,14 @@ export function HeroSection() {
       </div>
 
       {/* Scroll indicator */}
-      <button
+      {/* <button
         onClick={scrollToNext}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#C87A2C] transition-colors duration-300 animate-float"
         aria-label="Rolar para baixo"
       >
         <span className="text-xs tracking-[0.3em] uppercase">Descobrir</span>
         <div className="w-px h-10 bg-gradient-to-b from-[#C87A2C]/80 to-transparent" />
-      </button>
+      </button> */}
 
       <style jsx>{`
         .reveal {
