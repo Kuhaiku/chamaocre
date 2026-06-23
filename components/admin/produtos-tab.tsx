@@ -236,7 +236,6 @@ export function ProdutosTab() {
                       </label>
                     </div>
 
-                    {/* AQUI ESTÁ O "QUADRADINHO NORMAL": w-12 h-12 (48x48px fixos), sem estourar o layout */}
                     <div className="flex flex-wrap gap-2 mt-4">
                       {imagens.map((img, idx) => (
                         <div key={idx} draggable onDragStart={(e) => handleDragStart(e, idx)} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, idx)} className={`relative w-20 h-20 shrink-0 rounded-sm border-2 overflow-hidden bg-white cursor-grab active:cursor-grabbing group ${idx === 0 ? 'border-[#C87A2C]' : 'border-stone-200'}`}>
@@ -247,12 +246,10 @@ export function ProdutosTab() {
                             <div className="w-full h-full flex items-center justify-center bg-stone-100 text-stone-300"><ImageIcon size={16} /></div>
                           )}
                           
-                          {/* Overlay com botão de apagar */}
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
                             <button type="button" onClick={() => handleRemoveImage(idx)} className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 outline-none"><Trash size={12}/></button>
                           </div>
                           
-                          {/* Tag de Capa */}
                           {idx === 0 && <span className="absolute bottom-0 left-0 w-full bg-[#C87A2C] text-white text-[7px] font-bold text-center py-[2px] uppercase tracking-widest z-10 leading-none">Capa</span>}
                         </div>
                       ))}
@@ -270,35 +267,63 @@ export function ProdutosTab() {
 
               {formTab === 'textos' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="sm:col-span-1">
-                      <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Linha / Coleção</label>
-                      <input type="text" value={produtoEditando.line} onChange={(e) => setProdutoEditando({...produtoEditando, line: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Coluna Esquerda */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Linha / Coleção</label>
+                        <input type="text" value={produtoEditando.line} onChange={(e) => setProdutoEditando({...produtoEditando, line: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      </div>
+                      
+                      <div>
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Etiqueta (Tag)</label>
+                        <input type="text" value={produtoEditando.tag} onChange={(e) => setProdutoEditando({...produtoEditando, tag: e.target.value})} placeholder="Ex: Novo" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Cor da Tag</label>
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="color" 
+                            value={produtoEditando.tagColor || '#C87A2C'} 
+                            onChange={(e) => setProdutoEditando({...produtoEditando, tagColor: e.target.value})} 
+                            className="w-11 h-11 p-1 bg-white border border-stone-300 rounded-md cursor-pointer shrink-0" 
+                          />
+                          <input 
+                            type="text" 
+                            value={produtoEditando.tagColor} 
+                            onChange={(e) => setProdutoEditando({...produtoEditando, tagColor: e.target.value})} 
+                            placeholder="#C87A2C" 
+                            maxLength={7}
+                            className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none uppercase" 
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Tempo de Queima</label>
+                        <input type="text" value={produtoEditando.burnTime} onChange={(e) => setProdutoEditando({...produtoEditando, burnTime: e.target.value})} placeholder="Ex: 30 horas" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+                      </div>
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Etiqueta (Tag)</label>
-                      <input type="text" value={produtoEditando.tag} onChange={(e) => setProdutoEditando({...produtoEditando, tag: e.target.value})} placeholder="Ex: Novo" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
+
+                    {/* Coluna Direita */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Notas Olfativas</label>
+                        <textarea rows={3} value={produtoEditando.notes} onChange={(e) => setProdutoEditando({...produtoEditando, notes: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
+                      </div>
+                      
+                      <div>
+                        <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Sensação (Feeling)</label>
+                        <textarea rows={4} value={produtoEditando.feeling} onChange={(e) => setProdutoEditando({...produtoEditando, feeling: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
+                      </div>
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Cor da Tag</label>
-                      <input type="color" value={produtoEditando.tagColor} onChange={(e) => setProdutoEditando({...produtoEditando, tagColor: e.target.value})} className="w-full h-[42px] p-1 bg-white border border-stone-300 rounded-md cursor-pointer" />
-                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Tempo de Queima</label>
-                    <input type="text" value={produtoEditando.burnTime} onChange={(e) => setProdutoEditando({...produtoEditando, burnTime: e.target.value})} placeholder="Ex: 30 horas" className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Notas Olfativas</label>
-                    <textarea rows={2} value={produtoEditando.notes} onChange={(e) => setProdutoEditando({...produtoEditando, notes: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">Sensação (Feeling)</label>
-                    <textarea rows={2} value={produtoEditando.feeling} onChange={(e) => setProdutoEditando({...produtoEditando, feeling: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
-                  </div>
-                  <div>
+
+                  {/* Linha Inteira na parte inferior */}
+                  <div className="mt-4">
                     <label className="text-xs font-bold text-stone-900 uppercase mb-1.5 block">História Detalhada</label>
-                    <textarea rows={5} value={produtoEditando.historia} onChange={(e) => setProdutoEditando({...produtoEditando, historia: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
+                    <textarea rows={4} value={produtoEditando.historia} onChange={(e) => setProdutoEditando({...produtoEditando, historia: e.target.value})} className="w-full px-3 py-2.5 bg-white border border-stone-300 rounded-md text-sm text-stone-900 focus:border-[#C87A2C] focus:ring-1 focus:ring-[#C87A2C] outline-none resize-none" />
                   </div>
                 </div>
               )}
