@@ -8,8 +8,7 @@ export interface CartItem {
   image: string
   quantity: number
   estoque: number
-  weight?: string | number
- peso_comercial?: string;
+  peso_comercial?: string;
 }
 
 interface CartStore {
@@ -34,11 +33,9 @@ export const useCartStore = create<CartStore>()(
         const currentItems = get().items
         const existingItem = currentItems.find((i) => i.id === item.id)
 
-        // 1. Higienização rigorosa dos dados (Impede NaN)
-        const safeEstoque = Number(item.estoque) || 999; // Se falhar, assume 999 para não travar
+        const safeEstoque = Number(item.estoque) || 999;
         const safeQuantity = Number(item.quantity) || 1;
         
-        // Converte preço mesmo se vier como string com vírgula (ex: "49,90" -> 49.90)
         let safePrice = item.price;
         if (typeof safePrice === 'string') {
           safePrice = Number((safePrice as string).replace(',', '.'));
@@ -55,7 +52,7 @@ export const useCartStore = create<CartStore>()(
                 ? { ...i, quantity: newQuantity, price: safePrice, estoque: safeEstoque } 
                 : i
             ),
-            isOpen: true,
+            // A linha isOpen foi removida para não abrir a sacola
           })
         } else {
           const initialQuantity = Math.min(safeQuantity, safeEstoque);
@@ -66,7 +63,7 @@ export const useCartStore = create<CartStore>()(
               price: safePrice, 
               estoque: safeEstoque 
             }],
-            isOpen: true,
+            // A linha isOpen foi removida para não abrir a sacola
           })
         }
       },
