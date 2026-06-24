@@ -9,6 +9,7 @@ export interface CartItem {
   quantity: number
   estoque: number
   peso_comercial?: string;
+  weight?: string | Number;
 }
 
 interface CartStore {
