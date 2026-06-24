@@ -8,6 +8,7 @@ export interface CartItem {
   image: string
   quantity: number
   estoque: number
+  weight?: string | number
  peso_comercial?: string;
 }
 

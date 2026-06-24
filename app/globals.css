@@ -4,7 +4,12 @@
 
 /* Força a compilação das cores de 100 a 900 para bg e text */
 @source inline("{bg,text}-{green,red,blue,yellow,amber,emerald,teal,cyan,indigo,violet,purple,pink,rose,orange}-{100..900..100}");
-
+/* Previne o zoom automático no iOS ao focar em inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
 @custom-variant dark (&:is(.dark *));
 /* ... restante código ... */
 @custom-variant dark (&:is(.dark *));
