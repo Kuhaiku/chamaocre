@@ -96,16 +96,16 @@ export function SensorySection() {
         {/* =========================================
             PARTE 2: CTA (Acenda o conforto)
         ============================================= */}
-        <div className="relative w-full flex flex-col items-center">
+        {/* <div className="relative w-full flex flex-col items-center"> */}
            
            {/* Efeito de Brilho Central (Glow Orb) */}
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-[#C87A2C]/15 blur-[80px] rounded-full pointer-events-none" />
+           {/* <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] md:w-[400px] md:h-[400px] bg-[#C87A2C]/15 blur-[80px] rounded-full pointer-events-none" />
 
            <div className="reveal-sens opacity-0 flex items-center gap-4 mb-6">
              <div className="w-8 h-px bg-[#C87A2C]/50" />
              <Sparkles className="w-3 h-3 text-[#C87A2C]" />
              <div className="w-8 h-px bg-[#C87A2C]/50" />
-           </div>
+           </div> */}
 
           {/* <h2 className="reveal-sens opacity-0 font-heading text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 leading-tight">
             Acenda o <em className="italic text-[#E59400]">conforto.</em>
@@ -134,7 +134,7 @@ export function SensorySection() {
               Falar no WhatsApp
             </a>
           </div> */}
-        </div>
+        {/* </div> */}
 
       </div>
     </section>
