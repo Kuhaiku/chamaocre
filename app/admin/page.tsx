@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/navbar'
 import { useAuthStore } from '@/lib/auth-store'
-import { Loader2, Package, Truck, Save, MapPin, Settings, CheckCircle2, ShoppingBag } from 'lucide-react'
-
-// IMPORTAÇÃO DO NOVO COMPONENTE DE PRODUTOS
+import { Loader2, Package, Truck, Save, MapPin, Settings, CheckCircle2, ShoppingBag, Key } from 'lucide-react'
 import { ProdutosTab } from '@/components/admin/produtos-tab'
 
 const EMAIL_ADMIN = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
@@ -27,6 +25,7 @@ export default function AdminPage() {
   // Estados de Configuração
   const [transportadorasAtivas, setTransportadorasAtivas] = useState<string[]>([])
   const [modoTeste, setModoTeste] = useState(true)
+  const [melhorEnvioToken, setMelhorEnvioToken] = useState('') // NOVO ESTADO AQUI
   const [servicosME, setServicosME] = useState<any[]>([]) 
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [salvandoConfig, setSalvandoConfig] = useState(false)
@@ -59,6 +58,7 @@ export default function AdminPage() {
       if (res.ok) {
         setTransportadorasAtivas(data.transportadoras || [])
         setModoTeste(data.modo_teste)
+        setMelhorEnvioToken(data.melhor_envio_token || '') // CARREGA O TOKEN
       }
     } catch (error) { console.error("Erro ao buscar configurações") }
   }
@@ -82,10 +82,15 @@ export default function AdminPage() {
       const res = await fetch('/api/admin/configuracoes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transportadoras: transportadorasAtivas, modo_teste: modoTeste })
+        body: JSON.stringify({ 
+          transportadoras: transportadorasAtivas, 
+          modo_teste: modoTeste,
+          melhor_envio_token: melhorEnvioToken // ENVIA O TOKEN NO BODY
+        })
       })
       if (res.ok) alert('Configurações salvas com sucesso!')
-    } catch (error) { alert('Erro ao salvar configurações.') } 
+      else alert('Erro da API ao salvar configurações.')
+    } catch (error) { alert('Erro de conexão ao salvar configurações.') } 
     finally { setSalvandoConfig(false) }
   }
 
@@ -169,7 +174,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* ABA PRODUTOS (Carrega o Componente Separado) */}
+          {/* ABA PRODUTOS */}
           {abaAtiva === 'produtos' && <ProdutosTab />}
 
           {/* ABA CONFIGURAÇÕES */}
@@ -180,10 +185,28 @@ export default function AdminPage() {
               {loadingConfig ? (
                  <Loader2 className="w-6 h-6 animate-spin text-[#C87A2C]" />
               ) : (
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between p-5 border border-stone-200 rounded-lg bg-stone-50">
+                <div className="space-y-6">
+                  
+                  {/* CAMPO DO TOKEN DO MELHOR ENVIO */}
+                  <div className="p-5 border border-stone-200 rounded-lg bg-stone-50/50">
+                    <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest flex items-center gap-2 mb-2">
+                      <Key size={16} className="text-[#C87A2C]" />
+                      Token do Melhor Envio
+                    </h3>
+                    <p className="text-xs text-stone-500 mb-4">Cole abaixo o Token OAuth para manter a integração de fretes funcionando.</p>
+                    <textarea 
+                      value={melhorEnvioToken}
+                      onChange={(e) => setMelhorEnvioToken(e.target.value)}
+                      placeholder="eyJ0eXAiOiJKV1QiLC..."
+                      rows={3}
+                      className="w-full px-4 py-3 bg-white border border-stone-200 rounded-lg text-xs text-stone-900 focus:border-[#C87A2C] outline-none font-mono resize-none shadow-sm"
+                    />
+                  </div>
+
+                  {/* CAMPO MODO TESTE */}
+                  <div className="flex items-center justify-between p-5 border border-stone-200 rounded-lg bg-stone-50/50">
                     <div>
-                      <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest">Modo de Teste</h3>
+                      <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest">Modo de Teste (Sandbox)</h3>
                       <p className="text-xs text-stone-500 mt-1">Ao ativar, gerar etiquetas não descontará do seu saldo e criará um rastreio simulado.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer ml-4">
@@ -192,12 +215,13 @@ export default function AdminPage() {
                     </label>
                   </div>
 
+                  {/* CAMPO TRANSPORTADORAS */}
                   <div>
                     <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest mb-3">Transportadoras Ativas</h3>
-                    <p className="text-xs text-stone-500 mb-4">Opções buscadas do Melhor Envio. Marque as que deseja oferecer.</p>
+                    <p className="text-xs text-stone-500 mb-4">Marque as opções que deseja oferecer aos seus clientes no Checkout.</p>
                     
                     {servicosME.length === 0 ? (
-                      <p className="text-xs text-red-500">Erro: Nenhuma transportadora retornada pela API.</p>
+                      <p className="text-xs text-red-500">Nenhum serviço carregado. Verifique se o Token do Melhor Envio é válido.</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {servicosME.map((servico) => {
@@ -215,7 +239,8 @@ export default function AdminPage() {
                     )}
                   </div>
 
-                  <button onClick={handleSalvarConfiguracoes} disabled={salvandoConfig} className="w-full py-4 bg-[#C87A2C] hover:bg-[#E59400] text-white rounded-lg tracking-widest uppercase text-xs font-bold transition-all shadow-md outline-none flex items-center justify-center gap-2">
+                  {/* BOTAO SALVAR */}
+                  <button onClick={handleSalvarConfiguracoes} disabled={salvandoConfig} className="w-full py-4 mt-4 bg-[#C87A2C] hover:bg-[#E59400] text-white rounded-lg tracking-widest uppercase text-xs font-bold transition-all shadow-md outline-none flex items-center justify-center gap-2">
                     {salvandoConfig ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Salvar Configurações
                   </button>
                 </div>
