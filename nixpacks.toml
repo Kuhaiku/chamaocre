@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "pnpm"]
+nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
 cmds = ["rm -rf pnpm-lock.yaml", "pnpm install --no-frozen-lockfile --config.ignore-scripts=false"]
