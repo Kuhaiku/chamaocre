@@ -1,53 +1,79 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
+import pool from '@/lib/db';
+import crypto from 'crypto';
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' });
 
 export async function POST(request: Request) {
   try {
-    // O Mercado Pago envia os IDs do pagamento via Query Params na URL
     const url = new URL(request.url);
-    const topic = url.searchParams.get('topic') || url.searchParams.get('type');
-    const id = url.searchParams.get('id') || url.searchParams.get('data.id');
+    let dataId = url.searchParams.get('data.id') || url.searchParams.get('id');
 
-    if (topic === 'payment' && id) {
-      const payment = new Payment(client);
-      const paymentData = await payment.get({ id: String(id) });
+    // Lemos o body como texto primeiro para não quebrar a requisição
+    const bodyText = await request.text();
+    let body: any = {};
+    if (bodyText) {
+      try { body = JSON.parse(bodyText); } catch (e) { console.error('Erro ao fazer parse do JSON'); }
+    }
 
-      const pedidoId = paymentData.external_reference;
-      const status = paymentData.status; // 'approved', 'pending', 'rejected', etc.
+    if (!dataId && (body.type === 'payment' || body.topic === 'payment')) {
+      dataId = body.data?.id;
+    }
 
-      if (pedidoId) {
-        let novoStatus = 'aguardando_pagamento';
-        if (status === 'approved') novoStatus = 'pago';
-        else if (status === 'rejected' || status === 'cancelled') novoStatus = 'cancelado';
+    if (!dataId) {
+      return NextResponse.json({ success: true, message: 'Notificação ignorada' }, { status: 200 });
+    }
 
-        // 1. Atualiza o status do pedido no banco de dados
-        await pool.execute('UPDATE pedidos SET status = ? WHERE id = ?', [novoStatus, pedidoId]);
+    // --- 1. VALIDAÇÃO DE SEGURANÇA (ASSINATURA SECRETA) ---
+    const signatureHeader = request.headers.get('x-signature');
+    const requestId = request.headers.get('x-request-id');
+    const secret = process.env.MP_WEBHOOK_SECRET;
 
-        // 2. Se o pagamento foi aprovado, dá baixa no estoque automaticamente
-        if (status === 'approved') {
-           const [itens]: any = await pool.execute(
-             'SELECT produto_id, quantidade FROM itens_pedido WHERE pedido_id = ?', 
-             [pedidoId]
-           );
-           
-           for (const item of itens) {
-             await pool.execute(
-               'UPDATE produtos SET estoque = GREATEST(estoque - ?, 0) WHERE id = ?', 
-               [item.quantidade, item.produto_id]
-             );
-           }
+    if (secret && signatureHeader && requestId) {
+      // Extrai os dados do cabeçalho enviado pelo Mercado Pago (ts e v1)
+      const tsMatch = signatureHeader.match(/ts=(\d+)/);
+      const v1Match = signatureHeader.match(/v1=([a-f0-9]+)/);
+
+      if (tsMatch && v1Match) {
+        const ts = tsMatch[1];
+        const v1 = v1Match[1];
+        
+        // Cria a string de manifesto exatamente como o Mercado Pago exige
+        const manifest = `id:${dataId};request-id:${requestId};ts:${ts}`;
+        
+        // Gera a criptografia local usando a sua Assinatura Secreta
+        const hmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
+
+        // Se a assinatura gerada for diferente da que chegou, é uma fraude
+        if (hmac !== v1) {
+          console.error('[Webhook MP] ALERTA DE SEGURANÇA: Assinatura Inválida! Possível tentativa de fraude.');
+          return NextResponse.json({ error: 'Assinatura inválida. Acesso negado.' }, { status: 403 });
         }
       }
     }
+    // --------------------------------------------------------
 
-    // Sempre retorne 200 OK rapidamente para o Mercado Pago saber que você recebeu o aviso
+    // 2. Confirmação Dupla: Busca os dados reais na API do Mercado Pago
+    const paymentApi = new Payment(client);
+    const paymentData = await paymentApi.get({ id: dataId });
+
+    // 3. Atualiza o banco de dados se realmente estiver pago
+    if (paymentData.status === 'approved') {
+      const [result]: any = await pool.execute(
+        `UPDATE pedidos SET status = 'pago' WHERE mp_payment_id = ?`,
+        [dataId]
+      );
+
+      if (result.affectedRows > 0) {
+        console.log(`[Webhook MP] Sucesso! Pedido com MP_ID ${dataId} foi marcado como PAGO.`);
+      }
+    }
+
     return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {
-    console.error('Erro no Webhook do Mercado Pago:', error);
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+    console.error('[Webhook MP] Erro Crítico:', error);
+    return NextResponse.json({ error: 'Erro interno no processamento' }, { status: 500 });
   }
 }
