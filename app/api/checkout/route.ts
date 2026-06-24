@@ -1,19 +1,14 @@
 import { NextResponse } from 'next/server';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
 import pool from '@/lib/db';
-import crypto from 'crypto'; // Usado para gerar chave única para o MP
 
 export async function POST(request: Request) {
   let connection;
 
   try {
-    // 1. GARANTE QUE O TOKEN SEJA LIDO EM TEMPO REAL
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) {
-      throw new Error("MP_ACCESS_TOKEN não está configurado no servidor.");
+      return NextResponse.json({ success: false, error: 'Token do Mercado Pago não configurado no servidor.' }, { status: 500 });
     }
-
-    const client = new MercadoPagoConfig({ accessToken: token });
 
     const body = await request.json();
     const { 
@@ -29,38 +24,62 @@ export async function POST(request: Request) {
       transportadora_servico_id
     } = body;
 
-    // 2. INJETA O CPF MANUALMENTE NO PAYLOAD DO MERCADO PAGO
-    // O Brick não coletou o CPF, então pegamos do nosso input e forçamos aqui
-    const payment = new Payment(client);
+    // 1. Limpa o CPF para ter apenas números (Evita erro 400 no Mercado Pago)
+    const cpfLimpo = cpf ? cpf.replace(/\D/g, '') : '';
+
+    // 2. Prepara o Payload para o Mercado Pago
     const paymentData = {
       ...formData, 
-      transaction_amount: Number(total),
+      transaction_amount: Number(Number(total).toFixed(2)), // Garante max 2 casas decimais
       description: `Pedido Chama Ocre - ${items.length} itens`,
       payer: {
         ...formData.payer,
         identification: {
           type: 'CPF',
-          number: cpf // O MP rejeita silenciosamente sem isso!
+          number: cpfLimpo
         }
       }
     };
 
-    // Envia para o MP com Chave de Idempotência
-    const result = await payment.create({ 
-      body: paymentData,
-      requestOptions: { idempotencyKey: crypto.randomUUID() }
+    // 3. FAZ A REQUISIÇÃO DIRETA NA API DO MP (Bypass da SDK bugada)
+    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': crypto.randomUUID() // Evita pagamentos duplicados
+      },
+      body: JSON.stringify(paymentData)
     });
 
-    // 3. SALVAR NO BANCO DE DADOS (Estrutura exata do seu painel)
+    const resultText = await mpResponse.text();
+    let result;
+    
+    try {
+      result = JSON.parse(resultText);
+    } catch (parseError) {
+      throw new Error(`API do MP retornou erro não-JSON: ${resultText}`);
+    }
+
+    // Se o Mercado Pago recusar, agora sabemos o motivo exato!
+    if (!mpResponse.ok) {
+      console.error("ERRO RECUSADO PELO MP:", result);
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Pagamento recusado pelo Mercado Pago.',
+        motivo_mp: result 
+      }, { status: 400 });
+    }
+
+    // 4. Salvar o pedido no Banco de Dados
     connection = await pool.getConnection();
     await connection.beginTransaction(); 
 
     try {
-      // Salva o CPF no usuário caso ele não tenha
       if (cpf) {
         await connection.execute(
           'UPDATE usuarios SET cpf = ? WHERE id = ? AND (cpf IS NULL OR cpf = "")',
-          [cpf, usuario_id]
+          [cpfLimpo, usuario_id]
         );
       }
 
@@ -93,13 +112,13 @@ export async function POST(request: Request) {
       await connection.commit(); 
     } catch (dbError) {
       await connection.rollback(); 
-      console.error("ERRO SQL:", dbError);
+      console.error("ERRO SQL AO SALVAR PEDIDO:", dbError);
       throw dbError; 
     } finally {
       connection.release(); 
     }
 
-    // 4. RESPOSTA PARA O FRONTEND
+    // 5. Resposta de Sucesso para o Frontend
     if (result.payment_method_id === 'pix') {
       return NextResponse.json({
         success: true,
@@ -119,13 +138,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     if (connection) connection.release(); 
-    
-    console.error('Erro DETALHADO Checkout MP:', error);
-    
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Falha ao processar pagamento. Verifique seus dados.',
-      detalhe: error.message || "Erro desconhecido"
-    }, { status: 500 });
+    console.error('Erro GERAL no Checkout:', error);
+    return NextResponse.json({ success: false, error: 'Erro interno no servidor.', detalhe: error.message }, { status: 500 });
   }
 }
