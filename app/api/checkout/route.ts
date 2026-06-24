@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import pool from '@/lib/db';
 
-// Inicializa o Mercado Pago
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' });
 
 export async function POST(request: Request) {
@@ -13,93 +12,107 @@ export async function POST(request: Request) {
     const { 
       formData, 
       items, 
-      total, 
+      subtotal,
       frete,
+      total, 
       usuario_id, 
       cpf, 
       endereco,
-      transportadora_nome 
+      transportadora_nome,
+      transportadora_servico_id
     } = body;
 
-    // 1. Criação do pagamento no Mercado Pago
+    // 1. Criação do Pagamento no Mercado Pago
     const payment = new Payment(client);
     const paymentData = {
+      ...formData, 
       transaction_amount: Number(total),
       description: `Pedido Chama Ocre - ${items.length} itens`,
-      payment_method_id: formData.payment_method_id,
-      payer: {
-        email: formData.payer.email,
-        identification: formData.payer.identification,
-      },
     };
 
     const result = await payment.create({ body: paymentData });
 
-    // 2. Salvar o pedido no Banco de Dados
+    // 2. Salvar o pedido no Banco de Dados (Alinhado 100% com as suas tabelas)
     connection = await pool.getConnection();
-    await connection.beginTransaction(); // Inicia a transação segura
+    await connection.beginTransaction(); 
 
     try {
-      // Inserção na tabela principal 'pedidos'
+      // 2.1 - Atualiza o CPF do usuário se ele não tinha antes
+      if (cpf) {
+        await connection.execute(
+          'UPDATE usuarios SET cpf = ? WHERE id = ? AND (cpf IS NULL OR cpf = "")',
+          [cpf, usuario_id]
+        );
+      }
+
+      // 2.2 - Inserção na tabela 'pedidos'
       const [orderResult]: any = await connection.execute(
         `INSERT INTO pedidos (
           usuario_id, 
-          cpf, 
-          valor_total, 
-          valor_frete, 
-          status,
-          metodo_pagamento, 
-          mp_payment_id, 
-          transportadora_nome,
-          endereco_entrega
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          subtotal, 
+          frete, 
+          transportadora_nome, 
+          transportadora_servico_id, 
+          total, 
+          status, 
+          cep, 
+          rua, 
+          numero, 
+          complemento, 
+          bairro, 
+          cidade, 
+          estado
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           usuario_id,
-          cpf,
-          total,
+          subtotal,
           frete,
-          'aguardando_pagamento', // Consistente com sua regra do cron de 7 dias
-          formData.payment_method_id,
-          result.id, // ID da transação no Mercado Pago
-          transportadora_nome,
-          JSON.stringify(endereco) // Salva o endereço
+          transportadora_nome || '',
+          transportadora_servico_id || null,
+          total,
+          'aguardando_pagamento',
+          endereco.cep || '', 
+          endereco.rua || '', 
+          endereco.numero || '', 
+          endereco.complemento || '', 
+          endereco.bairro || '', 
+          endereco.cidade || '', 
+          endereco.estado || ''
         ]
       );
 
       const pedidoId = orderResult.insertId;
 
-      // Inserção na tabela separada 'itens_pedido'
+      // 2.3 - Inserção na tabela 'itens_pedido'
       for (const item of items) {
         await connection.execute(
           `INSERT INTO itens_pedido (
             pedido_id, 
             produto_id, 
-            nome, 
+            nome_produto, 
             quantidade, 
-            preco, 
-            imagem
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
+            preco_unitario
+          ) VALUES (?, ?, ?, ?, ?)`,
           [
             pedidoId,
             item.id,
             item.name,
             item.quantity,
-            item.price,
-            item.image || null
+            item.price // Aqui mapeamos para preco_unitario
           ]
         );
       }
 
-      await connection.commit(); // Confirma a gravação no banco
+      await connection.commit(); 
     } catch (dbError) {
-      await connection.rollback(); // Desfaz a gravação em caso de erro no banco
-      console.error("Erro no SQL:", dbError);
+      await connection.rollback(); 
+      console.error("ERRO SQL AO SALVAR PEDIDO:", dbError);
       throw dbError; 
     } finally {
-      connection.release(); // Libera a conexão
+      connection.release(); 
     }
 
-    // 3. Retornar os dados para o frontend (QR Code PIX ou sucesso Cartão)
+    // 3. Resposta para o Frontend (PIX ou Cartão)
     if (result.payment_method_id === 'pix') {
       return NextResponse.json({
         success: true,
@@ -118,12 +131,8 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erro no Checkout MP:', error);
+    console.error('Erro CRÍTICO no Checkout MP:', error);
     if (connection) connection.release(); 
-    
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Erro ao processar pagamento ou salvar pedido.' 
-    }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erro ao processar pagamento.' }, { status: 500 });
   }
 }
