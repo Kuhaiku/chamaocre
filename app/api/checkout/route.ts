@@ -40,8 +40,7 @@ export async function POST(request: Request) {
     await connection.beginTransaction(); // Inicia a transação segura
 
     try {
-      // Inserção principal do pedido. 
-      // Dica: Ajuste os nomes das colunas caso sua tabela 'pedidos' seja diferente.
+      // Inserção na tabela principal 'pedidos'
       const [orderResult]: any = await connection.execute(
         `INSERT INTO pedidos (
           usuario_id, 
@@ -52,37 +51,55 @@ export async function POST(request: Request) {
           metodo_pagamento, 
           mp_payment_id, 
           transportadora_nome,
-          endereco_entrega, 
-          itens_pedido
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          endereco_entrega
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           usuario_id,
           cpf,
           total,
           frete,
-          'pendente', // Status inicial aguardando o webhook confirmar
+          'aguardando_pagamento', // Consistente com sua regra do cron de 7 dias
           formData.payment_method_id,
           result.id, // ID da transação no Mercado Pago
           transportadora_nome,
-          JSON.stringify(endereco), // Salva o objeto de endereço como string JSON
-          JSON.stringify(items)     // Salva o carrinho como string JSON
+          JSON.stringify(endereco) // Salva o endereço
         ]
       );
 
-      // Se você tiver uma tabela separada para os itens (ex: itens_pedido), 
-      // você faria o loop de inserção aqui usando o orderResult.insertId:
-      // const pedidoId = orderResult.insertId;
-      // for (const item of items) { ... }
+      const pedidoId = orderResult.insertId;
+
+      // Inserção na tabela separada 'itens_pedido'
+      for (const item of items) {
+        await connection.execute(
+          `INSERT INTO itens_pedido (
+            pedido_id, 
+            produto_id, 
+            nome, 
+            quantidade, 
+            preco, 
+            imagem
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            pedidoId,
+            item.id,
+            item.name,
+            item.quantity,
+            item.price,
+            item.image || null
+          ]
+        );
+      }
 
       await connection.commit(); // Confirma a gravação no banco
     } catch (dbError) {
       await connection.rollback(); // Desfaz a gravação em caso de erro no banco
-      throw dbError; // Repassa o erro para o catch principal
+      console.error("Erro no SQL:", dbError);
+      throw dbError; 
     } finally {
-      connection.release(); // Libera a conexão de volta para o pool
+      connection.release(); // Libera a conexão
     }
 
-    // 3. Retornar os dados corretos para o frontend exibir o QR Code (PIX) ou Sucesso (Cartão)
+    // 3. Retornar os dados para o frontend (QR Code PIX ou sucesso Cartão)
     if (result.payment_method_id === 'pix') {
       return NextResponse.json({
         success: true,
@@ -101,8 +118,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erro no Checkout:', error);
-    // Se a conexão ficou aberta durante o erro, garantimos que ela seja liberada
+    console.error('Erro no Checkout MP:', error);
     if (connection) connection.release(); 
     
     return NextResponse.json({ 
