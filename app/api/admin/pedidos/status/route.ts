@@ -19,3 +19,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Erro no banco' }, { status: 500 });
   }
 }
+
+
