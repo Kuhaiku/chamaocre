@@ -64,23 +64,33 @@ export default function CheckoutPage() {
           const data = await res.json();
           if (data.status === 'pago') {
             clearInterval(interval);
-            router.push('/meus-pedidos'); // Joga pra tela de pedidos assim que pagar!
+            // Agora ele joga direto pra página ESPECÍFICA do pedido!
+            router.push(`/meus-pedidos/${data.id}`); 
           }
         } catch (err) { console.error(err) }
       }, 3000);
     }
 
-    // Se for Cartão (Aprova direto na hora), espera 4 segundos e joga pra tela
-    if (pedidoFinalizado && !pixData) {
-      setTimeout(() => {
-        router.push('/meus-pedidos');
+    // Se for Cartão (Aprova direto na hora), ele busca o ID do pedido e redireciona
+    if (pedidoFinalizado && !pixData && paymentId) {
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/pedidos/status?mp_payment_id=${paymentId}`);
+          const data = await res.json();
+          if (data.id) {
+            router.push(`/meus-pedidos/${data.id}`);
+          } else {
+            router.push('/meus-pedidos'); // fallback de segurança
+          }
+        } catch (err) {
+          router.push('/meus-pedidos');
+        }
       }, 4000);
     }
 
     return () => clearInterval(interval);
   }, [pedidoFinalizado, pixData, paymentId, router]);
   // ----------------------------------------------
-
   if (!isMounted || !user || (items.length === 0 && !pedidoFinalizado)) return null
 
   const calcularFrete = async (cepDestino: string) => {
