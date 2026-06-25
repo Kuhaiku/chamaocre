@@ -52,7 +52,7 @@ export default function CheckoutPage() {
     }
   }, [user, items, router, pedidoFinalizado, cpf])
 
-  // --- A MÁGICA DO REDIRECIONAMENTO (POLLING) ---
+// --- A MÁGICA DO REDIRECIONAMENTO (POLLING) ---
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -71,13 +71,6 @@ export default function CheckoutPage() {
       }, 3000);
     }
 
-    // --- ROLAGEM AUTOMÁTICA PARA O TOPO (PIX GERADO) ---
-  useEffect(() => {
-    if (pedidoFinalizado) {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [pedidoFinalizado])
-  
     // Se for Cartão (Aprova direto na hora), ele busca o ID do pedido e redireciona
     if (pedidoFinalizado && !pixData && paymentId) {
       setTimeout(async () => {
@@ -97,6 +90,14 @@ export default function CheckoutPage() {
 
     return () => clearInterval(interval);
   }, [pedidoFinalizado, pixData, paymentId, router]);
+
+  // --- ROLAGEM AUTOMÁTICA PARA O TOPO (PIX GERADO) ---
+  // ✅ AGORA SIM: DO LADO DE FORA, SEPARADO E SEGURO
+  useEffect(() => {
+    if (pedidoFinalizado) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [pedidoFinalizado]);
   // ----------------------------------------------
   if (!isMounted || !user || (items.length === 0 && !pedidoFinalizado)) return null
 
