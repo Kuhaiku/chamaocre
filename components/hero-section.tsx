@@ -83,14 +83,13 @@ export function HeroSection() {
       {/* Content */}
       <div className="relative z-20 max-w-5xl mx-auto px-6 text-center">
         {/* Badge */}
-        <div
-          className="inline-flex items-center gap-2 border border-[#C87A2C]/50 bg-[#C87A2C]/10 backdrop-blur-sm text-[#E59400] text-xs tracking-[0.3em] uppercase px-5 py-2 rounded-full mb-10 reveal opacity-0"
-          style={{ animationDelay: '0.1s' }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#E59400] animate-pulse" />
-          Velas Artesanais Exclusivas
-        </div>
-
+     <div
+  className="mt-28 md:mt-0 inline-flex items-center gap-2 border border-[#C87A2C]/50 bg-[#C87A2C]/10 backdrop-blur-sm text-[#E59400] text-xs tracking-[0.3em] uppercase px-5 py-2 rounded-full mb-10 reveal opacity-0"
+  style={{ animationDelay: '0.1s' }}
+>
+  <span className="w-1.5 h-1.5 rounded-full bg-[#E59400] animate-pulse" />
+  Velas Artesanais Exclusivas
+</div>
         {/* Heading */}
         <h1
           className="font-heading text-5xl md:text-7xl lg:text-8xl font-light leading-[1.1] text-foreground mb-8 reveal opacity-0 text-balance"
