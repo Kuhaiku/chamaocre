@@ -24,11 +24,18 @@ export const metadata: Metadata = {
   title: 'Chama Ocre Ateliê — Velas Artesanais',
   description:
     'Velas artesanais criadas para desacelerar o tempo, aquecer ambientes e despertar memórias. Experimente a coleção exclusiva da Chama Ocre Ateliê.',
-  generator: 'v0.app',
+  applicationName: 'Chama Ocre',
+  authors: [{ name: 'Leonardo Raposo Boechat' }],
+  creator: 'Leonardo Raposo Boechat',
+  publisher: 'Raposo.Tech',
   keywords: ['velas artesanais', 'velas aromáticas', 'presente', 'decoração', 'aconchego', 'outono'],
+  icons: {
+    icon: '/icon.svg',
+  },
   openGraph: {
     title: 'Chama Ocre Ateliê — Velas Artesanais',
     description: 'Transforme sua casa em um refúgio de aconchego com nossas velas artesanais.',
+    siteName: 'Chama Ocre',
     type: 'website',
   },
 }
