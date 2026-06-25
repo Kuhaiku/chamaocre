@@ -58,7 +58,7 @@ export function AboutSection() {
             {/* Logo watermark */}
             <div className="absolute top-4 left-4 md:top-6 md:left-6 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-[#C87A2C]/60 bg-background/80 backdrop-blur-sm z-10">
               <Image
-                src="logo.png"
+                src="/logo.png"
                 alt="Chama Ocre Ateliê"
                 fill
                 sizes="(max-width: 768px) 56px, 64px"
