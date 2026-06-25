@@ -301,7 +301,7 @@ export function AuthDrawer() {
                                 </button>
                               </div>
                               <a 
-                                href={`https://app.melhorenvio.com/rastreamento/?codigo=${pedido.codigo_rastreio}`}
+                                href={`https://melhorrastreio.com.br/rastreio/${pedido.codigo_rastreio}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}

@@ -122,14 +122,24 @@ export default function DetalhesPedidoPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* Rastreio */}
+           {/* Rastreio */}
             {pedido.codigo_rastreio && (
-              <div className="bg-white border border-stone-200 rounded-sm shadow-sm p-6 flex items-center gap-4">
-                <div className="bg-stone-100 p-3 rounded-full text-stone-600"><Truck size={20} /></div>
-                <div>
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-stone-900">Código de Rastreio</h3>
-                  <p className="font-mono text-lg text-[#C87A2C] mt-1">{pedido.codigo_rastreio}</p>
+              <div className="bg-white border border-stone-200 rounded-sm shadow-sm p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="bg-stone-100 p-3 rounded-full text-stone-600"><Truck size={20} /></div>
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-stone-900">Código de Rastreio</h3>
+                    <p className="font-mono text-lg text-[#C87A2C] mt-1">{pedido.codigo_rastreio}</p>
+                  </div>
                 </div>
+                <a 
+                  href={`https://melhorrastreio.com.br/rastreio/${pedido.codigo_rastreio}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#C87A2C] text-white px-6 py-3 rounded-sm text-xs font-bold tracking-widest uppercase hover:bg-[#E59400] transition-colors whitespace-nowrap"
+                >
+                  Rastrear Pacote
+                </a>
               </div>
             )}
           </div>
