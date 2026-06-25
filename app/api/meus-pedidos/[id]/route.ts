@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  // NOVO: Aguarda a resolução dos parâmetros da URL (Exigência do Next.js 15+)
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  
   const { searchParams } = new URL(request.url);
   const usuario_id = searchParams.get('usuario_id');
 
