@@ -37,6 +37,7 @@ export default function CheckoutPage() {
 
   const [pedidoFinalizado, setPedidoFinalizado] = useState(false)
   const [pixData, setPixData] = useState<any>(null)
+  const [paymentId, setPaymentId] = useState<string | null>(null) // NOVO: Guarda o ID para verificar o status
   const [copiado, setCopiado] = useState(false)
 
   useEffect(() => {
@@ -50,6 +51,35 @@ export default function CheckoutPage() {
       router.push('/loja')
     }
   }, [user, items, router, pedidoFinalizado, cpf])
+
+  // --- A MÁGICA DO REDIRECIONAMENTO (POLLING) ---
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    // Se for PIX (tem pixData), fica checando o banco a cada 3 segundos
+    if (pedidoFinalizado && pixData && paymentId) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/pedidos/status?mp_payment_id=${paymentId}`);
+          const data = await res.json();
+          if (data.status === 'pago') {
+            clearInterval(interval);
+            router.push('/meus-pedidos'); // Joga pra tela de pedidos assim que pagar!
+          }
+        } catch (err) { console.error(err) }
+      }, 3000);
+    }
+
+    // Se for Cartão (Aprova direto na hora), espera 4 segundos e joga pra tela
+    if (pedidoFinalizado && !pixData) {
+      setTimeout(() => {
+        router.push('/meus-pedidos');
+      }, 4000);
+    }
+
+    return () => clearInterval(interval);
+  }, [pedidoFinalizado, pixData, paymentId, router]);
+  // ----------------------------------------------
 
   if (!isMounted || !user || (items.length === 0 && !pedidoFinalizado)) return null
 
@@ -132,11 +162,11 @@ export default function CheckoutPage() {
           if (data.payment_method === 'pix') {
             setPixData({ qr_code: data.qr_code, qr_code_base64: data.qr_code_base64 })
           }
+          setPaymentId(data.payment_id) // CAPTURA O ID DA VENDA PARA O POLLING ESPIONAR
           setPedidoFinalizado(true)
           clearCart()
           resolve()
         } else {
-          // EXIBE O ERRO QUE VOLTAR DA API (Ex: O produto esgotou em estoque)
           alert(data.error || 'Não foi possível processar o pagamento. Verifique os dados.')
           reject()
         }
@@ -158,9 +188,11 @@ export default function CheckoutPage() {
               <div className="space-y-6">
                 <h1 className="text-2xl font-heading text-stone-900">Pagamento via PIX</h1>
                 <p className="text-sm text-stone-500">Escaneie o QR Code abaixo no seu aplicativo do banco.</p>
+                
                 <div className="flex justify-center p-4 bg-stone-50 rounded-sm inline-block mx-auto border border-stone-100">
                   <Image src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} alt="QR Code PIX" width={250} height={250} />
                 </div>
+                
                 <div className="flex items-center gap-2 max-w-md mx-auto relative">
                   <input type="text" value={pixData.qr_code} readOnly className="w-full bg-stone-100 text-xs text-stone-600 p-4 pr-12 rounded-sm border border-stone-200 outline-none" />
                   <button 
@@ -171,18 +203,26 @@ export default function CheckoutPage() {
                     {copiado ? <CheckCircle2 size={18} className="text-green-500" /> : <Copy size={18} />}
                   </button>
                 </div>
+
+                {/* Loader Dinâmico Avisando que o site tá escutando o banco */}
+                <div className="flex items-center justify-center gap-2 mt-8 text-[#C87A2C] bg-[#C87A2C]/10 py-3 px-4 rounded-sm max-w-xs mx-auto">
+                   <Loader2 size={16} className="animate-spin" />
+                   <span className="text-[10px] font-bold tracking-widest uppercase">Aguardando Pagamento...</span>
+                </div>
+
               </div>
             ) : (
               <div className="space-y-4">
                 <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto" />
                 <h1 className="text-3xl font-heading text-stone-900">Pedido Confirmado!</h1>
                 <p className="text-stone-500">Seu pagamento com cartão foi aprovado com sucesso.</p>
+                <div className="flex justify-center mt-6 text-[#C87A2C]">
+                   <Loader2 size={24} className="animate-spin" />
+                </div>
+                <p className="text-xs text-stone-400 mt-2">Redirecionando...</p>
               </div>
             )}
             
-            <Link href="/" className="inline-block mt-10 text-xs text-white bg-[#C87A2C] px-8 py-4 rounded-sm tracking-widest uppercase font-bold hover:bg-[#E59400] transition-all outline-none">
-              Voltar ao Início
-            </Link>
           </div>
         </main>
         <Footer />
