@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ShoppingBag, ArrowLeft, Loader2, Wind, Clock, Scale, Sparkles, Bell } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { useCartStore } from "@/lib/cart-store";
+import { useAuthStore } from "@/lib/auth-store";
 
 const parseGaleria = (galeriaRaw: any) => {
   if (!galeriaRaw) return [];
@@ -35,7 +36,26 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
   const [avisoCadastrado, setAvisoCadastrado] = useState(false); // NOVO: Estado para o feedback do botão Esgotado
 
   const addItemToCart = useCartStore((state) => state.addItem);
+const { user, openLogin } = useAuthStore();
 
+  const handleAvisoEstoque = async () => {
+    // Se o usuário não estiver logado, abre a gaveta de login e pausa a função
+    if (!user) {
+      openLogin();
+      return;
+    }
+
+    try {
+      await fetch('/api/avisos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produto_id: produto.id, email: user.email })
+      });
+      setAvisoCadastrado(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
   useEffect(() => {
     const fetchProduto = async () => {
       try {
@@ -303,7 +323,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
                 </div>
                 
                 <button 
-                  onClick={() => setAvisoCadastrado(true)}
+                  onClick={handleAvisoEstoque}
                   disabled={avisoCadastrado}
                   className={`w-full flex items-center justify-center gap-3 py-5 rounded-sm tracking-widest uppercase text-sm font-semibold transition-all duration-500 border outline-none ${
                     avisoCadastrado 
