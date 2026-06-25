@@ -84,7 +84,7 @@ export async function PUT(request: Request) {
         });
 
         for (const aviso of avisos) {
-          const linkProduto = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/produto/${data.id}`;
+          const linkProduto = `${process.env.NEXT_PUBLIC_APP_URL}produto/${data.id}`;
 
           const emailHtml = `
             <div style="font-family: Arial, sans-serif; padding: 30px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 8px;">
