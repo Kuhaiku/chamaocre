@@ -201,14 +201,14 @@ export function ProductsSection() {
                       Ver Detalhes
                     </Link>
                     
-                    <button 
+                    {/* <button 
                       onClick={() => handleComprarRapido(product)}
                       className="w-12 h-12 flex-shrink-0 bg-[#C87A2C] hover:bg-[#E59400] text-white flex items-center justify-center rounded-sm transition-transform duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg hover:shadow-[#C87A2C]/20"
                       aria-label="Adicionar à sacola"
                       title="Adicionar à sacola"
                     >
                       <ShoppingBag size={18} />
-                    </button>
+                    </button> */}
                   </div>
 
                 </div>
