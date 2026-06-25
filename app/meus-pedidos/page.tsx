@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/auth-store'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { Loader2, Package, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react'
+import { Loader2, Package, Clock, CheckCircle2, Truck, XCircle, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function MeusPedidosPage() {
@@ -45,7 +45,7 @@ export default function MeusPedidosPage() {
   }
 
   if (isLoading || !user) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#C87A2C]" /></div>
+    return <div className="min-h-screen flex items-center justify-center bg-stone-50"><Loader2 className="w-8 h-8 animate-spin text-[#C87A2C]" /></div>
   }
 
   return (
@@ -68,28 +68,28 @@ export default function MeusPedidosPage() {
             {pedidos.map((pedido) => {
               const statusProps = getStatusVisual(pedido.status)
               return (
-                <div key={pedido.id} className="bg-white p-6 border border-stone-200 rounded-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[#C87A2C]/50">
-                  <div>
-                    <p className="text-xs text-stone-500 mb-1">
-                      Pedido feito em {new Date(pedido.criado_em).toLocaleDateString('pt-BR')}
-                    </p>
-                    <h3 className="font-heading text-lg text-stone-900">Pedido #{pedido.id}</h3>
-                    <p className="text-sm font-medium text-stone-900 mt-2">
-                      Total: R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col md:items-end gap-3">
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest ${statusProps.cor}`}>
-                      {statusProps.icone} {statusProps.texto}
-                    </div>
-                    {pedido.codigo_rastreio && (
-                      <p className="text-xs font-medium text-stone-600 bg-stone-100 px-3 py-1.5 rounded-sm border border-stone-200">
-                        📦 Rastreio: {pedido.codigo_rastreio}
+                <Link href={`/meus-pedidos/${pedido.id}`} key={pedido.id} className="block group">
+                  <div className="bg-white p-6 border border-stone-200 rounded-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all group-hover:border-[#C87A2C] group-hover:shadow-md">
+                    <div>
+                      <p className="text-xs text-stone-500 mb-1">
+                        Feito em {new Date(pedido.criado_em).toLocaleDateString('pt-BR')}
                       </p>
-                    )}
+                      <h3 className="font-heading text-lg text-stone-900">Pedido #{pedido.id}</h3>
+                      <p className="text-sm font-medium text-stone-900 mt-2">
+                        Total: R$ {Number(pedido.total).toFixed(2).replace('.', ',')}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="flex flex-col md:items-end gap-3">
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest ${statusProps.cor}`}>
+                          {statusProps.icone} {statusProps.texto}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-stone-400 group-hover:text-[#C87A2C] transition-colors" />
+                    </div>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, User, Mail, Lock, Phone, Loader2, LogOut, Package, ChevronRight, ArrowLeft, Edit2, Check, Copy, CheckCircle2, FileText } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useCartStore } from '@/lib/cart-store';
-import { formatarCPF, limparNumeros } from '@/lib/utils'; // <-- IMPORTADO AQUI
+import { formatarCPF, limparNumeros } from '@/lib/utils';
 
 const statusMap: Record<string, { label: string, color: string }> = {
   'aguardando_pagamento': { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700 border-orange-200' },
@@ -46,7 +46,6 @@ export function AuthDrawer() {
       }, 300);
     }
     if (user) {
-      // Formata o CPF que vem do banco para exibir bonito na tela de edição
       setEditData({ nome: user.nome, telefone: user.telefone || '', cpf: formatarCPF(user.cpf || '') });
     }
   }, [isOpen, user, view, setView]);
@@ -79,7 +78,6 @@ export function AuthDrawer() {
 
   if (!isMounted) return null;
 
-  // Lógica de máscara no Cadastro
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     if (e.target.name === 'cpf') value = formatarCPF(value);
@@ -88,7 +86,6 @@ export function AuthDrawer() {
     setErrorMsg('');
   };
 
-  // Lógica de máscara na Edição de Perfil
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     if (e.target.name === 'cpf') value = formatarCPF(value);
@@ -105,7 +102,6 @@ export function AuthDrawer() {
 
     try {
       let bodyData = {};
-      // Aqui limpamos a máscara antes de enviar para a API!
       if (action === 'login') bodyData = { action, email: formData.email, senha: formData.senha };
       else if (action === 'register') bodyData = { action, ...formData, cpf: limparNumeros(formData.cpf) };
       else if (action === 'forgot_password') bodyData = { action, email: formData.email };
@@ -123,7 +119,6 @@ export function AuthDrawer() {
         if (action === 'login' || action === 'register') {
           setUser(data.user);
           setLoggedView('menu');
-          // REDIRECIONAMENTO AUTOMÁTICO SE TIVER ITENS NO CARRINHO
           if (items.length > 0) {
             setIsOpen(false);
             router.push('/checkout');
@@ -254,15 +249,24 @@ export function AuthDrawer() {
                       const statusInfo = statusMap[pedido.status] || { label: pedido.status, color: 'bg-stone-100 text-stone-600 border-stone-200' };
 
                       return (
-                        <div key={pedido.id} className="bg-white border border-stone-200 rounded-sm shadow-sm overflow-hidden">
+                        <div 
+                          key={pedido.id} 
+                          onClick={() => { setIsOpen(false); router.push(`/meus-pedidos/${pedido.id}`); }}
+                          className="bg-white border border-stone-200 rounded-sm shadow-sm overflow-hidden cursor-pointer group hover:border-[#C87A2C] transition-all"
+                        >
                           <div className="p-4 border-b border-stone-100 flex justify-between items-start bg-stone-50/50">
                             <div>
                               <span className="text-[10px] text-stone-500 uppercase tracking-widest block mb-1">Pedido #{pedido.id}</span>
                               <span className="text-sm font-medium text-stone-900">{dataPedido}</span>
                             </div>
-                            <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded-sm border ${statusInfo.color}`}>
-                              {statusInfo.label}
-                            </span>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded-sm border ${statusInfo.color}`}>
+                                {statusInfo.label}
+                              </span>
+                              <span className="flex items-center text-[10px] font-bold text-[#C87A2C] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                                Ver detalhes <ChevronRight size={12} />
+                              </span>
+                            </div>
                           </div>
                           
                           <div className="p-4 space-y-2">
@@ -289,7 +293,7 @@ export function AuthDrawer() {
                                   <span className="text-sm font-medium text-stone-900">{pedido.codigo_rastreio}</span>
                                 </div>
                                 <button 
-                                  onClick={() => handleCopiarRastreio(pedido.codigo_rastreio, pedido.id)}
+                                  onClick={(e) => { e.stopPropagation(); handleCopiarRastreio(pedido.codigo_rastreio, pedido.id); }}
                                   className="p-2 text-[#C87A2C] hover:bg-[#C87A2C]/10 rounded-sm transition-colors outline-none"
                                   title="Copiar código"
                                 >
@@ -300,6 +304,7 @@ export function AuthDrawer() {
                                 href={`https://app.melhorenvio.com/rastreamento/?codigo=${pedido.codigo_rastreio}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 className="w-full text-center py-2.5 bg-[#C87A2C] hover:bg-[#E59400] text-white text-[11px] font-bold tracking-widest uppercase rounded-sm transition-colors outline-none"
                               >
                                 Acompanhar Entrega no Site
