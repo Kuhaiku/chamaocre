@@ -22,17 +22,37 @@ export async function POST(request: Request) {
       console.error("Erro ao ler configurações do banco, assumindo array vazio.");
     }
 
-    // 2. Prepara os itens para o Melhor Envio (usa peso e dimensões padrão se não houver)
-    const products = items.map((item: any) => ({
-      id: item.id.toString(),
-      width: 15, 
-      height: 15,
-      length: 15,
-      weight: Number(item.weight) || 0.5,
-      insurance_value: Number(item.price),
-      quantity: Number(item.quantity),
-    }));
+    
+   // 2. Prepara os itens para o Melhor Envio usando as dimensões REAIS do banco
+    const products = items.map((item: any) => {
+      // Tenta pegar o peso real e converter para Quilos (Kg)
+      let pesoKg = 0.5; // fallback de segurança (500g)
+      if (item.weight && !isNaN(Number(item.weight)) && Number(item.weight) > 0) {
+        pesoKg = Number(item.weight);
+      } else if (item.peso_comercial) {
+        // Se vier como "140g", extrai apenas os números
+        const match = String(item.peso_comercial).match(/(\d+)/);
+        if (match) {
+          const gramas = Number(match[1]);
+          pesoKg = gramas > 1000 ? gramas / 1000 : gramas / 1000;
+        }
+      }
 
+      // Dimensões: Se estiver '0' ou vazio no banco, usa o MÍNIMO exigido pelos Correios
+      const w = Number(item.largura) > 0 ? Number(item.largura) : 11;
+      const h = Number(item.altura) > 0 ? Number(item.altura) : 2;
+      const l = Number(item.comprimento) > 0 ? Number(item.comprimento) : 16;
+
+      return {
+        id: item.id.toString(),
+        width: w,
+        height: h,
+        length: l,
+        weight: pesoKg,
+        insurance_value: Number(item.price),
+        quantity: Number(item.quantity),
+      };
+    });
     // 3. Faz a cotação real no Melhor Envio (Servidor de Produção)
     const response = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
       method: 'POST',

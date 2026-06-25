@@ -18,19 +18,29 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [isCartAnimating, setIsCartAnimating] = useState(false) // NOVO: Estado da animação
   
-  // ✅ CORRETO: Hooks chamados dentro do componente
   const { setIsOpen: setSacolaOpen, getTotalItems } = useCartStore()
   const openLogin = useAuthStore((state) => state.openLogin) 
   
   const totalItems = getTotalItems()
 
+  // Controla o efeito de fundo ao rolar a página
   useEffect(() => {
     setIsMounted(true)
     const handleScroll = () => setScrolled(window.scrollY > 60)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // NOVO: Dispara a animação toda vez que o número de itens na sacola mudar
+  useEffect(() => {
+    if (isMounted && totalItems > 0) {
+      setIsCartAnimating(true)
+      const timer = setTimeout(() => setIsCartAnimating(false), 300) // Duração do pulinho
+      return () => clearTimeout(timer)
+    }
+  }, [totalItems, isMounted])
 
   const isSolid = scrolled || forceSolid
 
@@ -78,15 +88,23 @@ export function Navbar({ forceSolid = false }: { forceSolid?: boolean }) {
             <User size={20} />
           </button>
 
-          {/* Botão da Sacola */}
+          {/* Botão da Sacola com Animação */}
           <button
             onClick={() => setSacolaOpen(true)}
-            className="relative p-2 text-stone-300 hover:text-[#C87A2C] transition-colors"
+            className={`relative p-2 transition-all duration-300 outline-none ${
+              isCartAnimating ? 'text-[#C87A2C] scale-110' : 'text-stone-300 hover:text-[#C87A2C] scale-100'
+            }`}
             aria-label="Abrir sacola"
           >
-            <ShoppingBag size={20} />
+            {/* O ícone dá um pulinho (animate-bounce) quando adiciona */}
+            <ShoppingBag size={20} className={isCartAnimating ? '-translate-y-1 transition-transform' : 'transition-transform'} />
+            
             {isMounted && totalItems > 0 && (
-              <span className="absolute top-0 right-0 bg-[#C87A2C] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center translate-x-1 -translate-y-1">
+              <span 
+                className={`absolute top-0 right-0 bg-[#C87A2C] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center translate-x-1 -translate-y-1 transition-all duration-300 ${
+                  isCartAnimating ? 'scale-125 shadow-[0_0_10px_rgba(200,122,44,0.6)]' : 'scale-100'
+                }`}
+              >
                 {totalItems}
               </span>
             )}

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
-import { Search, SlidersHorizontal, Loader2, X, ShoppingBag, FilterX, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, SlidersHorizontal, Loader2, X, ShoppingBag, FilterX } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
 
 const parseGaleria = (galeriaRaw: any) => {
@@ -25,36 +25,24 @@ const parseGaleria = (galeriaRaw: any) => {
 function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: number) => void }) {
   const [quantidade, setQuantidade] = useState(1);
   const [currentImg, setCurrentImg] = useState(0);
-  const [isAdded, setIsAdded] = useState(false); // NOVO ESTADO AQUI
+  const [isAdded, setIsAdded] = useState(false);
 
   const estoqueDisponivel = Number(product.estoque || 0);
   const galeriaArray = parseGaleria(product.galeria);
   const todasImagens = Array.from(new Set([product.image, ...galeriaArray].filter(Boolean)));
 
-  const nextImg = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentImg((prev) => (prev + 1) % todasImagens.length);
-  };
-
-  const prevImg = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentImg((prev) => (prev - 1 + todasImagens.length) % todasImagens.length);
-  };
-
-  // FUNÇÃO QUE CONTROLA O FEEDBACK VISUAL
   const handleAddToCart = () => {
     onAdd(product, quantidade);
     setIsAdded(true);
     setTimeout(() => {
       setIsAdded(false);
-      setQuantidade(1); // Opcional: reseta a quantidade após adicionar
-    }, 2000); // Fica verde por 2 segundos
+      setQuantidade(1);
+    }, 2000);
   };
 
   return (
     <div className="group bg-white border border-stone-200 rounded-sm overflow-hidden flex flex-col hover:border-[#C87A2C]/50 transition-colors w-full">
       
-      {/* ... (O código das imagens continua igualzinho) ... */}
       <div className="relative aspect-square overflow-hidden bg-stone-100 block group/carousel">
         <div className="absolute inset-0 z-0">
           <Image
@@ -66,19 +54,19 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
         </div>
       </div>
 
-      <div className="p-5 flex flex-col flex-grow relative z-10 bg-white">
-        <span className="text-[10px] tracking-[0.2em] uppercase text-[#C87A2C] font-medium mb-1 block">
+      <div className="p-3 sm:p-5 flex flex-col flex-grow relative z-10 bg-white">
+        <span className="text-[8px] sm:text-[10px] tracking-[0.2em] uppercase text-[#C87A2C] font-medium mb-1 block truncate">
           {product.line}
         </span>
-        <h3 className="font-heading text-xl text-stone-900 mb-1">{product.name}</h3>
-        <p className="text-xs text-stone-500 mb-4 line-clamp-1">{product.notes}</p>
+        <h3 className="font-heading text-sm sm:text-xl text-stone-900 mb-1 truncate">{product.name}</h3>
+        <p className="text-[10px] sm:text-xs text-stone-500 mb-3 sm:mb-4 line-clamp-1">{product.notes}</p>
         
         <div className="mt-auto">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-medium text-stone-900 block">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-3 sm:mb-4 gap-1">
+            <span className="text-sm sm:text-lg font-medium text-stone-900 block">
               R$ {Number(product.price).toFixed(2).replace('.', ',')}
             </span>
-            <span className="text-[10px] text-stone-400 uppercase tracking-widest font-medium">
+            <span className="text-[8px] sm:text-[10px] text-stone-400 uppercase tracking-widest font-medium">
               Restam {estoqueDisponivel}
             </span>
           </div>
@@ -90,23 +78,22 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
               <button onClick={() => setQuantidade(Math.min(estoqueDisponivel, quantidade + 1))} className="w-8 h-full flex items-center justify-center text-stone-500 hover:text-[#C87A2C] outline-none">+</button>
             </div>
             
-            {/* BOTÃO COM FEEDBACK DINÂMICO */}
             <button 
               onClick={handleAddToCart}
               disabled={isAdded}
-              className={`w-full h-8 sm:h-10 flex items-center justify-center gap-1.5 rounded-sm text-[10px] font-semibold uppercase tracking-widest transition-all shadow-sm outline-none ${
+              className={`w-full h-8 sm:h-10 flex items-center justify-center gap-1.5 rounded-sm text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest transition-all shadow-sm outline-none ${
                 isAdded 
                   ? 'bg-green-600 text-white scale-95' 
                   : 'bg-[#C87A2C] hover:bg-[#E59400] text-white'
               }`}
             >
               {isAdded ? (
-                <>Na Sacola! ✔</>
+                <>✔ <span className="hidden sm:inline">Na Sacola!</span></>
               ) : (
                 <>
-                  <ShoppingBag size={14} /> 
+                  <ShoppingBag size={14} className="hidden sm:block" /> 
                   <span className="hidden sm:inline">Adicionar à Sacola</span>
-                  <span className="sm:hidden">Sacola</span>
+                  <span className="sm:hidden">Comprar</span>
                 </>
               )}
             </button>
@@ -120,6 +107,7 @@ function ProductCard({ product, onAdd }: { product: any, onAdd: (p: any, q: numb
     </div>
   );
 }
+
 export default function LojaPage() {
   const [produtos, setProdutos] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -150,14 +138,12 @@ export default function LojaPage() {
   }, [])
 
   const linhasUnicas = useMemo(() => {
-    // Filtra apenas produtos com estoque para extrair as linhas
     const emEstoque = produtos.filter(p => Number(p.estoque) > 0)
     return Array.from(new Set(emEstoque.map(p => p.line)))
   }, [produtos])
   
   const sensacoesUnicas = useMemo(() => {
     const todasSensacoes = new Set<string>();
-    // Filtra apenas produtos com estoque para extrair as sensações
     const emEstoque = produtos.filter(p => Number(p.estoque) > 0)
     emEstoque.forEach(p => {
       if (p.feeling) {
@@ -169,7 +155,6 @@ export default function LojaPage() {
   }, [produtos])
 
   const produtosFiltrados = useMemo(() => {
-    // Remove os produtos com estoque 0 ou nulo logo no início
     let filtrados = produtos.filter(p => Number(p.estoque) > 0)
 
     if (busca) {
@@ -194,14 +179,17 @@ export default function LojaPage() {
     return filtrados
   }, [produtos, busca, linhasSelecionadas, sensacoesSelecionadas, ordenacao])
 
-const handleComprar = (produto: any, quantidadeDesejada: number) => {
+  const handleComprar = (produto: any, quantidadeDesejada: number) => {
     addItemToCart({
       id: produto.id,
       name: produto.name,
       price: Number(produto.price),
       image: produto.image,
       weight: produto.weight,
-      estoque: Number(produto.estoque), // <-- ADICIONE ESTA LINHA
+      altura: produto.altura,
+      largura: produto.largura,
+      comprimento: produto.comprimento,
+      estoque: Number(produto.estoque),
       quantity: quantidadeDesejada
     })
   }
@@ -363,7 +351,7 @@ const handleComprar = (produto: any, quantidadeDesejada: number) => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {produtosFiltrados.map((product) => (
                   <ProductCard 
                     key={product.id} 

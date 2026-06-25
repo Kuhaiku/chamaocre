@@ -95,7 +95,11 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
       image: produto.image,
       peso_comercial: produto.peso_comercial,
       estoque: estoqueDisponivel,
-      quantity: quantidade
+      quantity: quantidade,
+      weight: produto.weight,           // <-- ADICIONADO
+      altura: produto.altura,           // <-- ADICIONADO
+      largura: produto.largura,         // <-- ADICIONADO
+      comprimento: produto.comprimento  // <-- ADICIONADO
     });
   };
 
@@ -127,7 +131,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
         backgroundColor: '#0a0a0a'
       }}
     >
-      <Navbar />
+    <Navbar forceSolid />
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 pt-32 pb-20">
         

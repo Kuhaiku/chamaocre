@@ -71,6 +71,13 @@ export default function CheckoutPage() {
       }, 3000);
     }
 
+    // --- ROLAGEM AUTOMÁTICA PARA O TOPO (PIX GERADO) ---
+  useEffect(() => {
+    if (pedidoFinalizado) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [pedidoFinalizado])
+  
     // Se for Cartão (Aprova direto na hora), ele busca o ID do pedido e redireciona
     if (pedidoFinalizado && !pixData && paymentId) {
       setTimeout(async () => {

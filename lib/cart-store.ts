@@ -8,8 +8,11 @@ export interface CartItem {
   image: string
   quantity: number
   estoque: number
-  peso_comercial?: string;
-  weight?: string | number;
+  peso_comercial?: string
+  weight?: string | number
+  altura?: string | number      // <-- ADICIONADO
+  largura?: string | number     // <-- ADICIONADO
+  comprimento?: string | number // <-- ADICIONADO
 }
 
 interface CartStore {
