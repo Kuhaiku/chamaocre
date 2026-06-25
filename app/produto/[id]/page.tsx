@@ -3,7 +3,8 @@
 import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft, Loader2, Wind, Clock, Scale, Sparkles } from "lucide-react";
+// IMPORTANTE: Adicionamos o ícone Bell (Sino) aqui na lista de importações
+import { ShoppingBag, ArrowLeft, Loader2, Wind, Clock, Scale, Sparkles, Bell } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { useCartStore } from "@/lib/cart-store";
 
@@ -31,6 +32,7 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
   const [imagensUnicas, setImagensUnicas] = useState<string[]>([]);
   const [quantidade, setQuantidade] = useState(1);
   const [dominantRGB, setDominantRGB] = useState<string>("200, 122, 44");
+  const [avisoCadastrado, setAvisoCadastrado] = useState(false); // NOVO: Estado para o feedback do botão Esgotado
 
   const addItemToCart = useCartStore((state) => state.addItem);
 
@@ -88,6 +90,9 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
   const estoqueDisponivel = Number(produto?.estoque || 0);
 
   const handleAddToCart = () => {
+    // Trava de segurança extra: não adiciona se não houver estoque
+    if (estoqueDisponivel <= 0) return;
+
     addItemToCart({
       id: produto.id,
       name: produto.name,
@@ -96,10 +101,10 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
       peso_comercial: produto.peso_comercial,
       estoque: estoqueDisponivel,
       quantity: quantidade,
-      weight: produto.weight,           // <-- ADICIONADO
-      altura: produto.altura,           // <-- ADICIONADO
-      largura: produto.largura,         // <-- ADICIONADO
-      comprimento: produto.comprimento  // <-- ADICIONADO
+      weight: produto.weight,           
+      altura: produto.altura,           
+      largura: produto.largura,         
+      comprimento: produto.comprimento  
     });
   };
 
@@ -163,11 +168,19 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
                   {produto.tag}
                 </div>
               )}
+
+              {/* Tag visual Extra avisando que está esgotado na foto */}
+              {estoqueDisponivel <= 0 && (
+                 <div className="absolute top-4 right-4 z-10 bg-black/80 backdrop-blur-sm border border-white/20 text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-sm shadow-sm">
+                   Esgotado
+                 </div>
+              )}
+
               <Image 
                 src={imagemPrincipal} 
                 alt={produto.name} 
                 fill 
-                className="object-cover transition-opacity duration-500" 
+                className={`object-cover transition-opacity duration-500 ${estoqueDisponivel <= 0 ? 'opacity-70 grayscale-[20%]' : ''}`} 
                 priority
               />
             </div>
@@ -244,40 +257,74 @@ export default function ProdutoDetalhes(props: { params: Promise<{ id: string }>
               </p>
             </div>
 
-            {/* Controle de Quantidade Adicionado */}
-            <div className="flex items-center gap-4 mb-6">
-              <span className="text-xs uppercase tracking-widest text-stone-400">Quantidade</span>
-              <div className="flex items-center border border-white/20 rounded-sm h-11 bg-white/5">
-                <button 
-                  onClick={() => setQuantidade(Math.max(1, quantidade - 1))} 
-                  className="px-4 h-full text-stone-400 hover:text-white outline-none"
-                >
-                  -
-                </button>
-                <span className="w-8 text-center text-sm font-medium text-white">{quantidade}</span>
-                <button 
-                  onClick={() => setQuantidade(Math.min(estoqueDisponivel, quantidade + 1))} 
-                  className="px-4 h-full text-stone-400 hover:text-white outline-none"
-                >
-                  +
-                </button>
-              </div>
-              <span className="text-[10px] text-stone-500 uppercase tracking-widest">
-                {estoqueDisponivel} disponíveis
-              </span>
-            </div>
+            {/* MÁGICA DO ESTOQUE ACONTECE AQUI */}
+            {estoqueDisponivel > 0 ? (
+              <>
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-xs uppercase tracking-widest text-stone-400">Quantidade</span>
+                  <div className="flex items-center border border-white/20 rounded-sm h-11 bg-white/5">
+                    <button 
+                      onClick={() => setQuantidade(Math.max(1, quantidade - 1))} 
+                      className="px-4 h-full text-stone-400 hover:text-white outline-none"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium text-white">{quantidade}</span>
+                    <button 
+                      onClick={() => setQuantidade(Math.min(estoqueDisponivel, quantidade + 1))} 
+                      className="px-4 h-full text-stone-400 hover:text-white outline-none"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-stone-500 uppercase tracking-widest">
+                    {estoqueDisponivel} disponíveis
+                  </span>
+                </div>
 
-            <button 
-              onClick={handleAddToCart}
-              className="w-full text-white flex items-center justify-center gap-3 py-5 rounded-sm tracking-widest uppercase text-sm font-semibold transition-all duration-500 shadow-xl hover:-translate-y-1 outline-none"
-              style={{ 
-                backgroundColor: `rgb(${dominantRGB})`,
-                boxShadow: `0 15px 35px -10px rgba(${dominantRGB}, 0.6)`
-              }}
-            >
-              <ShoppingBag size={18} />
-              Adicionar à Sacola
-            </button>
+                <button 
+                  onClick={handleAddToCart}
+                  className="w-full text-white flex items-center justify-center gap-3 py-5 rounded-sm tracking-widest uppercase text-sm font-semibold transition-all duration-500 shadow-xl hover:-translate-y-1 outline-none"
+                  style={{ 
+                    backgroundColor: `rgb(${dominantRGB})`,
+                    boxShadow: `0 15px 35px -10px rgba(${dominantRGB}, 0.6)`
+                  }}
+                >
+                  <ShoppingBag size={18} />
+                  Adicionar à Sacola
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mb-6 flex items-center gap-3">
+                  <span className="inline-block px-3 py-1.5 bg-red-900/40 text-red-400 text-[10px] font-bold uppercase tracking-widest rounded-sm border border-red-900/50">
+                    Esgotado no momento
+                  </span>
+                </div>
+                
+                <button 
+                  onClick={() => setAvisoCadastrado(true)}
+                  disabled={avisoCadastrado}
+                  className={`w-full flex items-center justify-center gap-3 py-5 rounded-sm tracking-widest uppercase text-sm font-semibold transition-all duration-500 border outline-none ${
+                    avisoCadastrado 
+                      ? 'bg-green-900/40 text-green-400 border-green-800 cursor-default' 
+                      : 'text-stone-300 border-stone-600 bg-stone-900/50 hover:bg-stone-800 hover:text-white hover:border-stone-500'
+                  }`}
+                >
+                  {avisoCadastrado ? (
+                    <>✔ Aviso Cadastrado com Sucesso!</>
+                  ) : (
+                    <>
+                      <Bell size={18} />
+                      Me avise quando estiver disponível
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-stone-500 text-center mt-3 uppercase tracking-widest">
+                  Notificaremos no e-mail da sua conta
+                </p>
+              </>
+            )}
             
           </div>
         </div>
