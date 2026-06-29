@@ -82,23 +82,23 @@ export function CartDrawer() {
                       )}
                     </div>
                     
-                    <div className="flex flex-col flex-1 py-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-sm font-heading text-stone-900 mb-1 line-clamp-1">{item.name}</h3>
-                          
-                          {/* Exibição condicional do Peso Comercial */}
-                          {labelPeso && (
-                            <p className="text-[10px] text-stone-500 uppercase tracking-widest">
-                              {labelPeso}
-                            </p>
-                          )}
-                          
-                        </div>
-                        <button onClick={() => removeItem(item.id)} className="text-stone-400 hover:text-red-500 transition-colors outline-none">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                 <div className="flex flex-col flex-1 py-1">
+  <div className="flex justify-between items-start">
+    <div>
+      <h3 className="text-sm font-heading text-stone-900 mb-1 line-clamp-1">{item.name}</h3>
+      
+      {/* Exibição apenas do peso_comercial, se existir */}
+      {item.peso_comercial && (
+        <p className="text-[10px] text-stone-500 uppercase tracking-widest">
+          {item.peso_comercial}
+        </p>
+      )}
+      
+    </div>
+    <button onClick={() => removeItem(item.id)} className="text-stone-400 hover:text-red-500 transition-colors outline-none">
+      <Trash2 size={16} />
+    </button>
+  </div>
                       
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center border border-stone-200 rounded-sm h-8 bg-stone-50">
