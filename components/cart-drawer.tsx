@@ -83,7 +83,7 @@ export function CartDrawer() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-sm font-heading text-stone-900 mb-1 line-clamp-1">{item.name}</h3>
-                          <p className="text-[10px] text-stone-500 uppercase tracking-widest">{item.weight}</p>
+                          <p className="text-[10px] text-stone-500 uppercase tracking-widest">{item.peso_comercial}</p>
                         </div>
                         <button onClick={() => removeItem(item.id)} className="text-stone-400 hover:text-red-500 transition-colors outline-none">
                           <Trash2 size={16} />
