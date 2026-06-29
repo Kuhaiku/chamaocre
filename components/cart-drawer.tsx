@@ -70,6 +70,9 @@ export function CartDrawer() {
                 const qty = Number.isNaN(Number(item.quantity)) ? 1 : Number(item.quantity);
                 const price = Number.isNaN(Number(item.price)) ? 0 : Number(item.price);
                 const estoqueMax = Number(item.estoque) || 999; // Fallback se não tiver estoque
+                
+                // Pega o peso comercial se existir, senão usa o weight padrão
+                const labelPeso = item.peso_comercial || item.weight;
 
                 return (
                   <div key={item.id} className="flex gap-4 group">
@@ -83,7 +86,14 @@ export function CartDrawer() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-sm font-heading text-stone-900 mb-1 line-clamp-1">{item.name}</h3>
-                          <p className="text-[10px] text-stone-500 uppercase tracking-widest">{item.peso_comercial}</p>
+                          
+                          {/* Exibição condicional do Peso Comercial */}
+                          {labelPeso && (
+                            <p className="text-[10px] text-stone-500 uppercase tracking-widest">
+                              {labelPeso}
+                            </p>
+                          )}
+                          
                         </div>
                         <button onClick={() => removeItem(item.id)} className="text-stone-400 hover:text-red-500 transition-colors outline-none">
                           <Trash2 size={16} />
