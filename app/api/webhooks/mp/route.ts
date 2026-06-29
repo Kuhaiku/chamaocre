@@ -59,7 +59,7 @@ export async function POST(request: Request) {
           }
 
           // 4. DISPARO DO E-MAIL DE CONFIRMAÇÃO
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL;
           const itensHtml = itens.map((i: any) => `<li style="margin-bottom: 5px;">${i.quantidade}x ${i.nome_produto}</li>`).join('');
 
           const emailHtml = `

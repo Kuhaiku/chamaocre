@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         [email, token]
       );
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
       const resetLink = `${appUrl}/reset-senha?token=${token}`;
       const logoUrl = `${appUrl}/images/Logofaixa.png`;
       
