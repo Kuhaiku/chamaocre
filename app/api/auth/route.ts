@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
@@ -22,7 +21,6 @@ export async function POST(request: Request) {
 
     // ================== REGISTRO ==================
     if (action === 'register') {
-      // CORREÇÃO: Adicionado o cpf aqui na desestruturação
       const { nome, email, telefone, senha, cpf } = data; 
       if (!nome || !email || !senha) return NextResponse.json({ error: 'Preencha todos os campos obrigatórios' }, { status: 400 });
 
@@ -32,13 +30,15 @@ export async function POST(request: Request) {
       const hashedSenha = await bcrypt.hash(senha, 10);
       const [result]: any = await pool.execute(
         'INSERT INTO usuarios (nome, email, telefone, senha, cpf) VALUES (?, ?, ?, ?, ?)',
-        // CORREÇÃO: Injetando o cpf no banco ao invés de uma string vazia ''
         [nome, email, telefone || '', hashedSenha, cpf || ''] 
       );
 
-      // CRIANDO O COOKIE PARA O MIDDLEWARE
+      // 1. Prepara a resposta de sucesso
+      const response = NextResponse.json({ success: true, user: { id: result.insertId, nome, email, telefone, cpf: cpf || '' } });
+
+      // 2. Cria e anexa o cookie na resposta (Forma segura no Next.js)
       const token = crypto.randomBytes(32).toString('hex');
-      cookies().set('token', token, {
+      response.cookies.set('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -46,8 +46,7 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 7 // 1 semana
       });
 
-      // CORREÇÃO: Devolvendo o cpf para o store do front-end
-      return NextResponse.json({ success: true, user: { id: result.insertId, nome, email, telefone, cpf: cpf || '' } });
+      return response;
     }
 
     // ================== LOGIN ==================
@@ -62,9 +61,12 @@ export async function POST(request: Request) {
       const isValid = await bcrypt.compare(senha, user.senha);
       if (!isValid) return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
 
-      // CRIANDO O COOKIE PARA O MIDDLEWARE
+      // 1. Prepara a resposta de sucesso
+      const response = NextResponse.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, telefone: user.telefone, cpf: user.cpf } });
+
+      // 2. Cria e anexa o cookie na resposta (Forma segura no Next.js)
       const token = crypto.randomBytes(32).toString('hex');
-      cookies().set('token', token, {
+      response.cookies.set('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -72,20 +74,16 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 7 // 1 semana
       });
 
-      // CORREÇÃO: Devolvendo o cpf do banco de dados para o front-end
-      return NextResponse.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, telefone: user.telefone, cpf: user.cpf } });
+      return response;
     }
 
     // ================== ATUALIZAR PERFIL ==================
     if (action === 'update_profile') {
-      // CORREÇÃO: Lendo o cpf do data
       const { id, nome, telefone, cpf } = data;
       if (!id || !nome) return NextResponse.json({ error: 'ID e Nome são obrigatórios' }, { status: 400 });
 
-      // CORREÇÃO: Atualizando o CPF no banco de dados também
       await pool.execute('UPDATE usuarios SET nome = ?, telefone = ?, cpf = ? WHERE id = ?', [nome, telefone || '', cpf || '', id]);
       
-      // CORREÇÃO: Retornando os dados com o cpf atualizado
       return NextResponse.json({ success: true, user: { id, nome, telefone, cpf } });
     }
 
