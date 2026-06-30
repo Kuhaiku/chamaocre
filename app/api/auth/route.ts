@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
@@ -35,6 +36,16 @@ export async function POST(request: Request) {
         [nome, email, telefone || '', hashedSenha, cpf || ''] 
       );
 
+      // CRIANDO O COOKIE PARA O MIDDLEWARE
+      const token = crypto.randomBytes(32).toString('hex');
+      cookies().set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7 // 1 semana
+      });
+
       // CORREÇÃO: Devolvendo o cpf para o store do front-end
       return NextResponse.json({ success: true, user: { id: result.insertId, nome, email, telefone, cpf: cpf || '' } });
     }
@@ -50,6 +61,16 @@ export async function POST(request: Request) {
       const user = users[0];
       const isValid = await bcrypt.compare(senha, user.senha);
       if (!isValid) return NextResponse.json({ error: 'Senha incorreta' }, { status: 401 });
+
+      // CRIANDO O COOKIE PARA O MIDDLEWARE
+      const token = crypto.randomBytes(32).toString('hex');
+      cookies().set('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7 // 1 semana
+      });
 
       // CORREÇÃO: Devolvendo o cpf do banco de dados para o front-end
       return NextResponse.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, telefone: user.telefone, cpf: user.cpf } });
