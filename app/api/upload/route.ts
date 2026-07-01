@@ -31,8 +31,11 @@ export async function POST(request: Request) {
     const filepath = path.join(uploadDir, filename);
     await writeFile(filepath, buffer);
 
-    // Retorna a URL correta e organizada
-    return NextResponse.json({ success: true, url: `/produtos/${folder}/${filename}` });
+    // Retorna a URL chamando a nova rota dinâmica de leitura
+    return NextResponse.json({ 
+      success: true, 
+      url: `/api/imagem?file=produtos/${folder}/${filename}` 
+    });
   } catch (error) {
     console.error('Erro no upload:', error);
     return NextResponse.json({ error: 'Falha no upload da imagem.' }, { status: 500 });
